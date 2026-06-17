@@ -113,16 +113,17 @@
             background: rgba(0,0,0,0.72); text-align:center; padding: 6px;
             font-size: 9px; letter-spacing: 3px; color: #555; font-weight: 700; text-transform:uppercase;
         }
-        .card-body { padding: 13px; }
-        .card-name  { font-size: 14px; font-weight: 700; letter-spacing: 1px; margin-bottom: 2px; }
-        .card-title { font-size: 9px; color: #555; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+        .card-body { padding: 15px; }
+        .card-name  { font-size: 15px; font-weight: 800; letter-spacing: 1px; margin-bottom: 3px; }
+        .card-title { font-size: 10px; color: #aaa; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
         .card-role-tag {
             display: inline-block; font-size: 9px; letter-spacing: 2px;
-            border: 1px solid rgba(255,255,255,0.12); padding: 2px 8px; border-radius: 20px;
-            color: #888; margin-bottom: 9px; text-transform: uppercase;
+            border: 1px solid rgba(255,255,255,0.3); padding: 3px 10px; border-radius: 20px;
+            color: #eee; margin-bottom: 12px; text-transform: uppercase;
+            background: rgba(255,255,255,0.05);
         }
-        .card-diff { display:flex; align-items:center; gap:6px; font-size:10px; color:#555; }
-        .card-stars { color: #c8a030; font-size:13px; letter-spacing:1px; }
+        .card-diff { display:flex; align-items:center; gap:6px; font-size:10px; color:#ccc; }
+        .card-stars { color: #f1c40f; font-size:14px; letter-spacing:1px; text-shadow: 0 0 10px rgba(241,196,15,0.6); }
  
         /* Detail panel */
         #char-detail-panel {
@@ -161,16 +162,30 @@
         }
         .btn-back:hover { color:#aaa; border-color:rgba(255,255,255,0.28); }
         .btn-play-game {
-            background:rgba(120,50,220,0.18); border:2px solid rgba(140,80,255,0.38);
-            color:#a080e0; padding:14px 52px; cursor:pointer; border-radius:3px;
-            font-size:16px; letter-spacing:6px; text-transform:uppercase; font-weight:700;
-            font-family:inherit; transition:all 0.22s;
+            background: rgba(140,80,255,0.1); border: 2px solid rgba(140,80,255,0.3);
+            color: rgba(255,255,255,0.3); padding: 14px 52px; cursor: pointer; border-radius: 4px;
+            font-size: 16px; letter-spacing: 6px; text-transform: uppercase; font-weight: 800;
+            font-family: inherit; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden;
+        }
+        .btn-play-game:not(:disabled) {
+            background: rgba(140,80,255,0.25);
+            border-color: rgba(160,100,255,0.8);
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            box-shadow: 0 0 20px rgba(110,50,220,0.3);
         }
         .btn-play-game:not(:disabled):hover {
-            background:rgba(140,80,255,0.32); border-color:rgba(160,100,255,0.75);
-            box-shadow:0 0 32px rgba(110,50,220,0.5); color:#fff; transform:translateY(-2px);
+            background: rgba(140,80,255,0.45);
+            border-color: #fff;
+            box-shadow: 0 0 40px rgba(140,80,255,0.6);
+            transform: translateY(-2px);
         }
-        .btn-play-game:disabled { opacity:0.2; cursor:default; }
+        .btn-play-game:disabled { 
+            opacity: 0.4; 
+            cursor: default;
+            filter: grayscale(1);
+        }
  
         /* ══════════════════════════════════════════════════
            MODAL (placeholder for Settings/Credits)
@@ -765,11 +780,12 @@ const CharacterSelect = {
         const card = document.createElement('div');
         card.className = 'char-card' + (char.playable ? '' : ' locked');
         card.dataset.id = char.id;
-        const stars = '★'.repeat(char.stars) + '☆'.repeat(3 - char.stars);
+        const maxStars = 5;
+        const stars = '★'.repeat(char.stars) + '☆'.repeat(Math.max(0, maxStars - char.stars));
         card.innerHTML = `
             <div class="card-art" style="border-bottom: 2px solid ${char.color}22">
                 ${char.image
-                    ? `<img src="${char.image}" alt="${char.name}">`
+                    ? `<img src="${char.image}" alt="${char.name}" onerror="this.onerror=null; this.src='https://placehold.co/400x400/080616/666?text=${encodeURIComponent(char.name[0])}';">`
                     : `<div class="card-art-placeholder" style="color:${char.color}">${char.name[0]}</div>`}
                 ${!char.playable ? '<div class="card-art-locked">COMING SOON</div>' : ''}
             </div>
