@@ -1915,38 +1915,41 @@ const WaveManager = {
     bossWaveInterval: 0,        // future: e.g. 5 = every 5th wave is a boss wave
 
     // ── Public entry point ──────────────────────────────
-   startRun() {
+// ── Public entry point ──────────────────────────────
+startRun() {
     this.active = true;
 
-    // 🧠 SINGLE SOURCE OF TRUTH SYNC
     this.waveNumber = 1;
     this.wavesCleared = 0;
 
-    GAME_STATE.wave.number = 1;
-    GAME_STATE.wave.phase = "combat";
-    GAME_STATE.wave.active = true;
-    GAME_STATE.wave.waveCleared = false;
+    this.phase = 'banner-wave';
+    this.countdownValue = 3;
 
     GAME_STATE.enemies = [];
 
-    this.phase = 'banner-wave';
+    // 🧠 GAME_STATE = UI MIRROR ONLY (no logic control)
+    GAME_STATE.wave.number = this.waveNumber;
+    GAME_STATE.wave.phase = this.phase;
+    GAME_STATE.wave.active = true;
+    GAME_STATE.wave.waveCleared = false;
 
     this._beginWaveIntro();
 },
 
+// ── Per-frame tick ──────────────────────────────
 update(now) {
     if (!this.active) return;
 
-    // 🧠 HARD SYNC EVERY FRAME (prevents desync crashes)
+    // 🧠 mirror only (safe, no control)
     GAME_STATE.wave.number = this.waveNumber;
     GAME_STATE.wave.phase = this.phase;
-    GAME_STATE.wave.active = this.active;
 
     if (this.phase === 'banner-wave') {
         if (now >= this.phaseEndTime) {
             this._hideBanner();
+
             this.phase = 'fighting';
-            GAME_STATE.wave.phase = "combat";
+            GAME_STATE.wave.phase = 'fighting';
 
             this._spawnWave(this.waveNumber);
             this._resetPlayerForWave();
@@ -1962,9 +1965,8 @@ update(now) {
                 this.waveNumber++;
                 this.wavesCleared++;
 
-                // 🧠 SYNC EVERYTHING
                 GAME_STATE.wave.number = this.waveNumber;
-                GAME_STATE.wave.phase = "combat";
+                GAME_STATE.wave.phase = 'banner-wave';
 
                 this._beginWaveIntro();
             } else {
@@ -1977,13 +1979,13 @@ update(now) {
 
 _beginWaveIntro() {
     this.phase = 'banner-wave';
-    GAME_STATE.wave.phase = "banner-wave";
+
+    GAME_STATE.wave.phase = 'banner-wave';
 
     this.phaseEndTime = performance.now() + 1500;
 
     this._showBanner(`WAVE ${this.waveNumber}`, '');
 },
-
 _spawnWave(n) {
     GAME_STATE.enemies.forEach(entry => this._disposeEnemy(entry));
     GAME_STATE.enemies = [];
