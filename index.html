@@ -846,6 +846,25 @@ const WEAPONS = {
               hitstopDur:55,  shakeMag:0.14, arcForward:0.24, arcAngle:1.12 }
 };
 const GAME_STATE = {
+   const combatFX = {
+    hitstopEndTime: 0,
+    shakeIntensity: 0,
+    shakeDecayRate: 0.86,
+    knockbackVel: new THREE.Vector3(),
+    knockbackDecay: 0.68,
+    knockbackTargetMesh: null,
+    enemyRecoilScale: new THREE.Vector3(1, 1, 1),
+    inputBuffer: false,
+    inputBufferExpiry: 0,
+    comboCount: 0,
+    lastHitTime: 0,
+    comboResetMs: 1300,
+
+    m1Step: 0,
+    m1LastSwingTime: 0,
+    m1ComboWindow: 620,
+    activeM1Step: 1
+};
     player: {
         hp:100, maxHp:100, speed:13,
         position: new THREE.Vector3(0,0,15),
