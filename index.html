@@ -1,3 +1,6 @@
+
+
+Index · HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -727,6 +730,27 @@ const CharacterData = {
         }
     },
  
+    NAOYA: {
+        id:'NAOYA',
+        name:'Naoya Zenin',
+        title:'The Fastest Zenin',
+        role:'Speed Assassin',
+        difficulty:'Extreme',
+        stars:5,
+        combatStyle:'High-Speed Melee / Projection Sorcery',
+        description:'Naoya Zenin overwhelms opponents with unmatched speed and Projection Sorcery. He uses relentless pressure and precise attacks to trap enemies inside Projection Frames before finishing them.',
+        strengths:['Highest Mobility','Extremely Fast Attacks','Strong Combo Pressure','Unique Crowd Control Through Projection','Excellent Chase Potential'],
+        weaknesses:['Lower Durability','Requires Maintaining Combos','Mistakes Are Punished Heavily','High Skill Ceiling'],
+        weapons:['None — Projection Sorcery'],
+        image:'naoya.jpeg',
+        playable:true,
+        color:'#7fd4ff'
+        // NOTE: no `awakening` block yet — Naoya's awakening is out of scope for this
+        // phase. AbilitySystem/AwakeningController currently fall back to Toji's
+        // defaults for any charId that isn't 'NANAMI'; that's a known, temporary
+        // cosmetic gap to be closed when Naoya's abilities/awakening are implemented.
+    },
+ 
     MEGUMI: {
         id:'MEGUMI',
         name:'Megumi Fushiguro',
@@ -907,7 +931,7 @@ const MenuUI = {
         CharacterSelect.hide(() => {
             // ── Apply character config before HUD shows ──
             _applyCharacterConfig(currentCharacterId);
-
+ 
             // Reveal game HUD
             document.getElementById('ui-layer').style.opacity = '1';
             document.getElementById('ui-layer').style.pointerEvents = 'auto';
@@ -915,17 +939,17 @@ const MenuUI = {
             dash.classList.add('game-visible');
             document.getElementById('awakening-bar-wrap').classList.add('game-visible');
             document.getElementById('ability-bar').classList.add('game-visible');
-
+ 
             // Kick off gameplay
             gameStarted = true;
-
+ 
             // "FIGHT!" flash
             const msg = document.getElementById('status-msg');
             msg.innerText = 'FIGHT!';
             msg.style.color = '#f1c40f';
             msg.style.opacity = '1';
             setTimeout(() => { msg.style.opacity = '0'; }, 1600);
-
+ 
             // Hand off to the wave manager (additive — does not touch combat internals)
             WaveManager.startRun();
         });
@@ -937,7 +961,7 @@ const MenuUI = {
 // ════════════════════════════════════════════════════════
 let gameStarted = false;
 let currentCharacterId = 'TOJI';   // set in MenuUI.startGame from CharacterSelect.selected
-
+ 
 // ── Character config applied once at game-start ──────────────────────────────
 // Adds/removes Nanami's iconic green round glasses on the player rig.
 // Must receive the plain rig object (GAME_STATE.player.rig) — glasses are
@@ -949,54 +973,54 @@ function _applyNanamiGlasses(charId, rig) {
     const old = upper.getObjectByName('nanami_glasses');
     if (old) upper.remove(old);
     if (charId !== 'NANAMI') return;
-
+ 
     const glassGroup = new THREE.Group();
     glassGroup.name = 'nanami_glasses';
-
+ 
     // Positions are in upper-local space; head center is at y≈2.14
     const EY = 2.05, EZ = 0.22;  // eye Y, eye Z (front of face)
-
+ 
     const mLens  = new THREE.MeshStandardMaterial({ color:0x2d6b2d, transparent:true, opacity:0.68, metalness:0.1, roughness:0.15 });
     const mFrame = new THREE.MeshStandardMaterial({ color:0x1a1a1a, roughness:0.60 });
-
+ 
     // Left lens  (screen-left = model's right)
     const lL = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.082, 0.018, 16), mLens);
     lL.rotation.x = Math.PI / 2;
     lL.position.set(-0.11, EY, EZ);
     glassGroup.add(lL);
-
+ 
     // Right lens
     const lR = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.082, 0.018, 16), mLens);
     lR.rotation.x = Math.PI / 2;
     lR.position.set( 0.11, EY, EZ);
     glassGroup.add(lR);
-
+ 
     // Frame ring left
     const rL = new THREE.Mesh(new THREE.TorusGeometry(0.082, 0.009, 8, 20), mFrame);
     rL.position.set(-0.11, EY, EZ);
     glassGroup.add(rL);
-
+ 
     // Frame ring right
     const rR = new THREE.Mesh(new THREE.TorusGeometry(0.082, 0.009, 8, 20), mFrame);
     rR.position.set( 0.11, EY, EZ);
     glassGroup.add(rR);
-
+ 
     // Bridge
     const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.044, 0.010, 0.010), mFrame);
     bridge.position.set(0, EY, EZ);
     glassGroup.add(bridge);
-
+ 
     upper.add(glassGroup);
 }
-
+ 
 function _applyCharacterConfig(charId) {
     const char = CharacterData[charId];
     if(!char) return;
-
+ 
     // HUD player name
     const nameEl = document.getElementById('player-name');
     if(nameEl) nameEl.innerText = char.name;
-
+ 
     // Awakening system config
     if(charId === 'NANAMI'){
         AwakeningController.setConfig({
@@ -1013,16 +1037,16 @@ function _applyCharacterConfig(charId) {
             awakeningLabel: 'THE ONE WHO LEFT IT ALL BEHIND', awakeningColor: '#7c3aed'
         });
     }
-
+ 
     // Ability system
     AbilitySystem.setCharacter(charId);
-
+ 
     // Weapon
-    const startWep = (charId === 'NANAMI') ? WEAPONS.CLEAVER : WEAPONS.KATANA;
+    const startWep = (charId === 'NANAMI') ? WEAPONS.CLEAVER : (charId === 'NAOYA') ? WEAPONS.FISTS : WEAPONS.KATANA;
     GAME_STATE.player.currentWeapon = startWep;
     const wepNameEl = document.getElementById('current-weapon-name');
     if(wepNameEl) wepNameEl.innerText = startWep.name;
-
+ 
     // Model recolour — match reference image for each character
     const rm = GAME_STATE.player.rigMaterials;
     if(rm && charId === 'NANAMI'){
@@ -1034,6 +1058,14 @@ function _applyCharacterConfig(charId) {
         if(rm.sh) rm.sh.color.setHex(0x2e1a0a);   // dark brown shoes
         // Add navy shirt underlay by tinting the torso geometry — approximated via sw roughness
         rm.sw.roughness = 0.72;
+    } else if(rm && charId === 'NAOYA'){
+        // Reference: dark navy/charcoal kimono top, light grey-blue hakama, blonde hair, dark sandals
+        if(rm.sw) rm.sw.color.setHex(0x1c2430);   // dark navy kimono top
+        if(rm.pt) rm.pt.color.setHex(0xd7dbe2);   // light grey-blue hakama
+        if(rm.sk) rm.sk.color.setHex(0xe8c49a);   // skin tone
+        if(rm.hr) rm.hr.color.setHex(0xc9c25a);   // pale blonde/olive hair
+        if(rm.sh) rm.sh.color.setHex(0x1f1f1f);   // dark sandals
+        rm.sw.roughness = 0.62;   // slightly glossier — silk-like kimono fabric
     } else if(rm){
         // Toji — reset to original dark colours
         if(rm.sw) rm.sw.color.setHex(0x080808);
@@ -1043,18 +1075,26 @@ function _applyCharacterConfig(charId) {
         if(rm.sh) rm.sh.color.setHex(0x1a1a1a);
         rm.sw.roughness = 0.78;
     }
-
+ 
+    // Body proportions — Naoya reads leaner/faster than Toji's bulkier frame.
+    // Weapon models are parented under this same group (via the hand bone), so
+    // resetting to 1:1 for every other character keeps their weapons correctly sized.
+    if(pMesh){
+        if(charId === 'NAOYA') pMesh.scale.set(0.94, 1.04, 0.94);
+        else pMesh.scale.set(1, 1, 1);
+    }
+ 
     // Nanami glasses — add/remove circular lens frames on the player rig
     _applyNanamiGlasses(charId, GAME_STATE.player.rig);
-
+ 
     // Attach the correct starting weapon model to the hand bone
     WeaponAttachmentSystem.attach(startWep);
-
+ 
     // Controls overlay — swap weapon hint is Toji-only
     const ctrlEl = document.getElementById('controls-overlay');
     if(ctrlEl){
         const qeHint = ctrlEl.querySelector('.ctrl-swap');
-        if(qeHint) qeHint.style.display = (charId==='NANAMI') ? 'none' : '';
+        if(qeHint) qeHint.style.display = (charId==='NANAMI' || charId==='NAOYA') ? 'none' : '';
     }
 }
  
@@ -1067,7 +1107,12 @@ const WEAPONS = {
                hitstopDur:55,  shakeMag:0.14, arcForward:0.24, arcAngle:1.12 },
     // Cleaver — Nanami's ratio cleaver: heavy downward chops, builds ratio stacks on hit
     CLEAVER: { name:"Ratio Cleaver",            damage:28, range:3.8, attackSpeed:560, knockback:14, special:"ratio",
-               hitstopDur:105, shakeMag:0.30, arcForward:0.40, arcAngle:1.45 }
+               hitstopDur:105, shakeMag:0.30, arcForward:0.40, arcAngle:1.45 },
+    // Fists — Naoya's unarmed strikes: fastest swing speed in the roster, shorter
+    // range than any bladed weapon, no attached hand model (WeaponAttachmentSystem
+    // leaves the hand bone empty for this key). 4th hit activates Projection.
+    FISTS:   { name:"Naoya's Fists",            damage:14, range:2.8, attackSpeed:210, knockback:6,  special:"projection",
+               hitstopDur:60,  shakeMag:0.15, arcForward:0.22, arcAngle:0.95 }
 };
 const GAME_STATE = {
     player: {
@@ -1404,7 +1449,7 @@ const AwakeningController = {
                 if (el >= 3000) this._startActive();
                 return;
             }
-
+ 
             // ── Toji awakening (original — unchanged) ──
                         // Phase 2 (1.5 s): spawn black hole
             if(el >= 1500 && !s.blackHole) this._spawnBlackHole();
@@ -1470,7 +1515,7 @@ const AwakeningController = {
         scene.add(g);
         s.nanamiEnergyGroup = g;
     },
-
+ 
     _spawnNanamiBurst() {
         if (!pMesh || !scene) return;
         const pos = pMesh.position.clone();
@@ -1497,7 +1542,7 @@ const AwakeningController = {
         document.body.appendChild(fl);
         setTimeout(() => { fl.style.opacity = '0'; setTimeout(() => fl.remove(), 420); }, 75);
     },
-
+ 
     // ── Meter UI ─────────────────────────────────────────
     _refreshMeterUI() {
         const m = TOJI_AWAKENING_STATE.meter;
@@ -1716,7 +1761,7 @@ const AbilitySystem = {
             }
         },260);
     },
-
+ 
     // ════════════════════════════════════════════════════
     // NANAMI ABILITIES
     // ════════════════════════════════════════════════════
@@ -1743,7 +1788,7 @@ const AbilitySystem = {
             }
         },100);
     },
-
+ 
     // S2 — Collapse Cleave: wide downward slam, heavy hitstop + strong shake
     _nanami_s2() {
         AbilityAnimController.play(ABILITY_ANIMS.S2);
@@ -1759,7 +1804,7 @@ const AbilitySystem = {
             setTimeout(()=>{ fl.style.opacity='0'; setTimeout(()=>fl.remove(),330); },55);
         }
     },
-
+ 
     // S3 — Calculation Step: instantly guarantees a Ratio Mark on the targeted enemy
     _nanami_s3() {
         AbilityAnimController.play(ABILITY_ANIMS.S3);
@@ -1777,13 +1822,13 @@ const AbilitySystem = {
             }
         },220);
     },
-
+ 
     // S4 — Ratio Execution (two paths):
     //   NOT MARKED → instantly apply mark (7 stacks), deal moderate damage + blue burst
     //   MARKED     → consume mark, massive damage, Black Flash VFX (no floating text)
     _nanami_s4() {
         if(!GAME_STATE.enemy || GAME_STATE.enemy.hp<=0) return;
-
+ 
         if(!GAME_STATE.enemy.ratioMarked){
             // ── Path A: apply mark ──
             AbilityAnimController.play(ABILITY_ANIMS.S4);
@@ -1803,7 +1848,7 @@ const AbilitySystem = {
             },200);
             return;
         }
-
+ 
         // ── Path B: execute marked enemy with Black Flash ──
         AbilityAnimController.play(ABILITY_ANIMS.S4);
         GAME_STATE.enemy.ratioMarked=false;
@@ -1817,7 +1862,7 @@ const AbilitySystem = {
             }
         },200);
     },
-
+ 
     updateUI(now) {
         const cdm=this._cdMul();
         ['S1','S2','S3','S4'].forEach(key=>{
@@ -2246,7 +2291,10 @@ function createEnemy(opts) {
         isBoss: false,
         // ── Nanami Ratio Mark system ──
         ratioStacks: 0,
-        ratioMarked: false
+        ratioMarked: false,
+        // ── Naoya Projection system ──
+        projectionTrapped: false,
+        projectionEndTime: 0
     };
  
     // Lightweight DOM floating health bar (no extra 3D geometry/texture per enemy)
@@ -2257,7 +2305,7 @@ function createEnemy(opts) {
     barEl.appendChild(fillEl);
     const layer = document.getElementById('enemy-floating-bars');
     if (layer) layer.appendChild(barEl);
-
+ 
     // Nanami Ratio Mark floating "7:3" label
     const markEl = document.createElement('div');
     markEl.className = 'ratio-mark-label';
@@ -2267,7 +2315,7 @@ function createEnemy(opts) {
         'color:#f1c40f;font-size:18px;font-weight:900;letter-spacing:2px;'+
         'transform:translate(-50%,-100%);z-index:45;font-family:inherit;';
     if (layer) layer.appendChild(markEl);
-
+ 
     return { state, mesh, barEl, barFillEl: fillEl, markEl };
 }
  
@@ -2480,11 +2528,11 @@ const WeaponManager = {
         root.position.set(0.07, -0.14, 0.16);
         return root;
     },
-
+ 
     _buildCleaver() {
         const root = new THREE.Group();
         const M = this._mesh.bind(this);
-
+ 
         // ══ RATIO CLEAVER — Nanami's wide bone-cleaver (white blade, dark grip) ══
         // Reference: wide white rectangular blade, dark leather-wrap handle
         const mBlade  = new THREE.MeshStandardMaterial({ color:0xf0efea, metalness:0.12, roughness:0.62 }); // off-white
@@ -2494,7 +2542,7 @@ const WeaponManager = {
         const mGuard  = new THREE.MeshStandardMaterial({ color:0x5a4030, roughness:0.80 });                 // dark brown guard
         const mGrip   = new THREE.MeshStandardMaterial({ color:0x2a1a0e, roughness:0.95 });                 // very dark leather
         const mBand   = new THREE.MeshStandardMaterial({ color:0x1a0e06, roughness:0.98 });
-
+ 
         // ── Wide rectangular blade ──
         M(new THREE.BoxGeometry(0.32, 0.72, 0.040), mBlade,  0,      0.55,  0, root);
         M(new THREE.BoxGeometry(0.32, 0.72, 0.012), mEdge,   0,      0.55,  0.026, root);
@@ -2504,11 +2552,11 @@ const WeaponManager = {
         M(new THREE.BoxGeometry(0.32, 0.030, 0.040), mEdge,   0,      0.964, 0, root);
         // Heel notch — signature Nanami cleaver detail
         M(new THREE.BoxGeometry(0.062, 0.048, 0.045), mSpine, -0.129, 0.175, 0, root);
-
+ 
         // ── Guard ──
         M(new THREE.BoxGeometry(0.360, 0.058, 0.095), mGuard,  0, 0.115,  0, root);
         M(new THREE.BoxGeometry(0.360, 0.025, 0.080), mGuard,  0, 0.148,  0, root);
-
+ 
         // ── Handle ──
         M(new THREE.BoxGeometry(0.075, 0.29, 0.075), mGrip,  0, -0.105, 0, root);
         for (let i = 0; i < 4; i++) {
@@ -2516,13 +2564,13 @@ const WeaponManager = {
         }
         // Pommel
         M(new THREE.BoxGeometry(0.095, 0.055, 0.095), mGuard, 0, -0.295, 0, root);
-
+ 
         // Cow-print spots — dark patches on the white blade
         M(new THREE.BoxGeometry(0.10, 0.14, 0.042), mSpot,  0.04,  0.72,  0, root);
         M(new THREE.BoxGeometry(0.12, 0.10, 0.042), mSpot, -0.06,  0.55,  0, root);
         M(new THREE.BoxGeometry(0.07, 0.09, 0.042), mSpot,  0.08,  0.38,  0, root);
         M(new THREE.BoxGeometry(0.08, 0.06, 0.042), mSpot, -0.03,  0.26,  0, root);
-
+ 
         // FIX: blade was appearing backwards — rotate 180° on Y to face forward correctly
         root.rotation.set(-Math.PI * 0.52, Math.PI, 0.06);
         root.position.set(0.07, -0.20, 0.18);
@@ -2541,6 +2589,7 @@ const WeaponAttachmentSystem = {
         let key = 'KATANA';
         if (weaponData === WEAPONS.SPEAR)   key = 'SPEAR';
         if (weaponData === WEAPONS.CLEAVER) key = 'CLEAVER';
+        if (weaponData === WEAPONS.FISTS)   key = 'FISTS';   // no model registered — hand stays empty (unarmed)
         const model = WeaponManager.weapons[key];
         if (model) hand.add(model);
         WeaponVisualController.activeWeaponKey = key;
@@ -2806,6 +2855,9 @@ onEnemyDeath(entry) {
     if (entry.mesh) entry.mesh.visible = false;
     if (entry.barEl) entry.barEl.style.display = 'none';
  
+    // Naoya Projection: don't leave an orphaned frame if the trapped enemy died (e.g. from a perk/DoT)
+    if (entry.state.projectionTrapped) NaoyaProjectionSystem.release(entry, false);
+ 
     if (GAME_STATE.enemy === entry.state) {
         this._refreshDefaultTarget(); // snap abilities/HUD to a still-living enemy
     }
@@ -2848,7 +2900,7 @@ _startPerkSelection() {
         // If no perk UI: do NOT set active=false — let countdown in update() drive next wave
     }, 700);
 },
-
+ 
 resumeAfterPerks() {
     this.active = true;
     // Countdown still running via update() — nothing else needed
@@ -3055,6 +3107,20 @@ const ANIM_MAP = {
         { fwd:WEAPONS.CLEAVER.arcForward, ang:WEAPONS.CLEAVER.arcAngle, shoulderZ: 0.40, elbowStart:0.55, bodyLeanZ: 0.14, lungeZ:0.24 },
         { fwd:WEAPONS.CLEAVER.arcForward, ang:WEAPONS.CLEAVER.arcAngle, shoulderZ:-0.40, elbowStart:0.52, bodyLeanZ:-0.14, lungeZ:0.24 },
         { fwd:WEAPONS.CLEAVER.arcForward, ang:WEAPONS.CLEAVER.arcAngle, shoulderZ: 0.00, elbowStart:0.95, bodyLeanZ: 0.00, lungeZ:0.50 }
+    ],
+    // Fists — Naoya's unarmed combo: fast, tight, minimal wasted movement.
+    // Hit 3 adds an optional `spinY` field (new, opt-in — see updateWalkAnimation)
+    // for the spinning kick; every other weapon's frames simply omit this field
+    // and are completely unaffected.
+    FISTS: [
+        // Hit 1 — fast palm strike: short, sharp, minimal lean
+        { fwd:WEAPONS.FISTS.arcForward, ang:WEAPONS.FISTS.arcAngle, shoulderZ: 0.08, elbowStart:0.20, bodyLeanZ: 0.05, lungeZ:0.14 },
+        // Hit 2 — elbow strike: tight lateral snap, elbow already cocked
+        { fwd:WEAPONS.FISTS.arcForward, ang:WEAPONS.FISTS.arcAngle, shoulderZ:-0.34, elbowStart:0.95, bodyLeanZ:-0.12, lungeZ:0.10 },
+        // Hit 3 — spinning kick: body rotates through the strike
+        { fwd:WEAPONS.FISTS.arcForward, ang:WEAPONS.FISTS.arcAngle, shoulderZ: 0.20, elbowStart:0.15, bodyLeanZ: 0.22, lungeZ:0.06, spinY:1.35 },
+        // Hit 4 — high-speed Projection strike: fastest, most linear, biggest lunge
+        { fwd:WEAPONS.FISTS.arcForward, ang:WEAPONS.FISTS.arcAngle, shoulderZ: 0.00, elbowStart:0.10, bodyLeanZ: 0.00, lungeZ:0.30 }
     ]
 };
  
@@ -3089,6 +3155,12 @@ function executeAttackPipeline() {
     if(targetEntry){
         const dir=new THREE.Vector3().subVectors(targetEntry.mesh.position,pMesh.position).normalize();
         applyDamageToEnemy(wep,dir,combatFX.m1Step,targetEntry);
+ 
+        // ── Naoya Projection passive + speed-trail VFX — additive, no-ops for every other character ──
+        if (currentCharacterId === 'NAOYA') {
+            NaoyaProjectionSystem.onNaoyaHit(targetEntry, combatFX.m1Step);
+            NaoyaVFX.onM1Hit(combatFX.m1Step);
+        }
     }
  
     // Advance the string — loops back to hit 1 right after the finisher (hit 4)
@@ -3160,7 +3232,7 @@ function applyDamageToEnemy(wep,dir,step,targetEntry) {
     }
  
     state.hp=Math.max(0,state.hp-dmg);
-
+ 
     // ── Nanami Ratio Mark: every hit adds stacks; 7 marks the enemy ──
     if(currentCharacterId==='NANAMI' && state.hp>0){
         const wasMarked = state.ratioMarked;
@@ -3174,7 +3246,7 @@ function applyDamageToEnemy(wep,dir,step,targetEntry) {
             spawnMarkHitFX(mesh.position.clone());
         }
     }
-
+ 
     // Lifesteal perks: heal the player for a fraction of damage actually dealt
     if (P.lifestealPct > 0) {
         GAME_STATE.player.hp = Math.min(GAME_STATE.player.maxHp, GAME_STATE.player.hp + dmg*P.lifestealPct);
@@ -3229,14 +3301,14 @@ function applyDamageToEnemy(wep,dir,step,targetEntry) {
 function spawnBlackFlashVFX(pos) {
     if (!scene) return;
     const t0 = performance.now(), dur = 680;
-
+ 
     // Black impact sphere — expands rapidly from hit point
     const sGeo = new THREE.SphereGeometry(0.55, 8, 8);
     const sMat = new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:1.0 });
     const sphere = new THREE.Mesh(sGeo, sMat);
     sphere.position.copy(pos).add(new THREE.Vector3(0, 1.4, 0));
     scene.add(sphere);
-
+ 
     // Red lightning bolts radiating outward from impact
     const boltCount = 8;
     const bGeo = new THREE.BoxGeometry(0.065, 1.9, 0.065);
@@ -3252,7 +3324,7 @@ function spawnBlackFlashVFX(pos) {
         scene.add(bolt);
         boltData.push({ mesh:bolt, mat:bMat, cos:Math.cos(angle), sin:Math.sin(angle) });
     }
-
+ 
     // Black shockwave ring (flat torus expanding outward)
     const rGeo = new THREE.TorusGeometry(0.55, 0.10, 6, 22);
     const rMat = new THREE.MeshBasicMaterial({ color:0x0a0a0a, transparent:true, opacity:0.90 });
@@ -3260,21 +3332,21 @@ function spawnBlackFlashVFX(pos) {
     ring.rotation.x = Math.PI / 2;
     ring.position.copy(pos).add(new THREE.Vector3(0, 0.12, 0));
     scene.add(ring);
-
+ 
     // Brief black DOM overlay — the clearest possible Black Flash signal
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:#000;pointer-events:none;z-index:9999;opacity:0.82;transition:opacity 0.14s';
     document.body.appendChild(overlay);
     setTimeout(() => { overlay.style.opacity='0'; setTimeout(()=>overlay.remove(), 160); }, 85);
-
+ 
     (function tick() {
         const t = Math.min(1, (performance.now()-t0)/dur);
         const e = 1 - Math.pow(1-t, 2);  // ease-out
-
+ 
         // Sphere: rapid expansion + fade after initial burst
         sphere.scale.setScalar(1 + e*6.5);
         sMat.opacity = t < 0.22 ? 1.0 : Math.max(0, 1.0 - ((t-0.22)/0.78)*1.5);
-
+ 
         // Bolts: spread outward + fade
         boltData.forEach(b => {
             const spread = 1.0 + e*3.0;
@@ -3282,12 +3354,12 @@ function spawnBlackFlashVFX(pos) {
             b.mesh.position.z = pos.z + b.sin * spread;
             b.mat.opacity = Math.max(0, 0.95 - t*1.7);
         });
-
+ 
         // Ring: expand + fade
         const rs = 1 + e*12;
         ring.scale.set(rs, rs, 1);
         rMat.opacity = Math.max(0, 0.90 - t*1.4);
-
+ 
         if (t < 1) {
             requestAnimationFrame(tick);
         } else {
@@ -3298,7 +3370,7 @@ function spawnBlackFlashVFX(pos) {
         }
     })();
 }
-
+ 
 // ── MARK HIT VFX — blue burst when hitting an already-marked enemy ──
 function spawnMarkHitFX(pos) {
     if (!scene) return;
@@ -3324,7 +3396,222 @@ function spawnMarkHitFX(pos) {
         else { scene.remove(ring); rGeo.dispose(); rMat.dispose(); }
     })();
 }
-
+ 
+ 
+// ════════════════════════════════════════════════════════
+// NAOYA PROJECTION SYSTEM — additive, self-contained.
+// Every 4th consecutive M1 hit traps the target inside a thin,
+// mirror-like "Projection Frame": the enemy is fully frozen
+// (no movement, no attack) for 5s, or until Naoya hits them again.
+// Hooked from: executeAttackPipeline() (trigger/break on hit),
+// processEnemyAI() (freeze guard), runGameLoop() (per-frame tick),
+// WaveManager.onEnemyDeath() (cleanup on kill), createEnemy()
+// (neutral projectionTrapped/projectionEndTime fields).
+// Touches NOTHING belonging to Toji or Nanami.
+// ════════════════════════════════════════════════════════
+const NAOYA_PROJECTION_DURATION_MS = 5000;
+ 
+const NaoyaProjectionSystem = {
+    _frames: new Map(),   // entry.state -> { group, glass }
+ 
+    // Called only when the 4th consecutive M1 hit lands (see executeAttackPipeline)
+    trap(entry) {
+        if (!entry || !entry.state || entry.state.hp <= 0) return;
+        if (entry.state.projectionTrapped) return;   // already trapped — no-op
+        entry.state.projectionTrapped = true;
+        entry.state.projectionEndTime = performance.now() + NAOYA_PROJECTION_DURATION_MS;
+        this._spawnFrame(entry);
+    },
+ 
+    // Called any time Naoya lands a hit — breaks the frame if the target was trapped
+    onNaoyaHit(entry, step) {
+        if (!entry || !entry.state || entry.state.hp <= 0) return;
+        if (entry.state.projectionTrapped) {
+            this.release(entry, true);   // Naoya attacking a trapped enemy shatters it immediately
+            return;
+        }
+        if (step === 4) this.trap(entry);
+    },
+ 
+    release(entry, shatter) {
+        if (!entry || !entry.state) return;
+        if (!entry.state.projectionTrapped) return;
+        entry.state.projectionTrapped = false;
+        entry.state.projectionEndTime = 0;
+        this._removeFrame(entry, shatter !== false);
+    },
+ 
+    // Ticked every frame from runGameLoop — advances timers, keeps frames glued
+    // to their enemy, and releases on expiry. Cheap no-op when nothing is trapped.
+    update(now) {
+        if (this._frames.size === 0) return;
+        this._frames.forEach((frameData, state) => {
+            const entry = frameData.entry;
+            if (!entry || !entry.state || entry.state !== state || entry.state.hp <= 0) {
+                this._removeFrame(entry || { state }, false);
+                return;
+            }
+            if (!state.projectionTrapped) return;   // being torn down elsewhere this frame
+            if (now >= state.projectionEndTime) { this.release(entry, true); return; }
+            const g = frameData.group;
+            if (g && entry.mesh) {
+                g.position.copy(entry.mesh.position);
+                g.rotation.y = entry.mesh.rotation.y;
+                const pulse = 1 + Math.sin(now * 0.006) * 0.025;
+                g.scale.set(pulse, 1, pulse);
+            }
+        });
+    },
+ 
+    // ── Thin rectangular mirror-frame — explicitly NOT a cube/cage ──
+    _spawnFrame(entry) {
+        if (!scene || !entry.mesh) return;
+        const frameMat = new THREE.MeshStandardMaterial({
+            color: 0x9fd8ff, emissive: 0x4fa8ff, emissiveIntensity: 1.1,
+            metalness: 0.6, roughness: 0.15, transparent: true, opacity: 0.92
+        });
+        const glassMat = new THREE.MeshStandardMaterial({
+            color: 0xbfe8ff, metalness: 0.85, roughness: 0.05,
+            transparent: true, opacity: 0.14, emissive: 0x2f7fcf, emissiveIntensity: 0.25,
+            side: THREE.DoubleSide, depthWrite: false
+        });
+ 
+        const W = 1.7, H = 3.0, T = 0.07, D = 0.05, cy = H / 2 + 0.05;
+        const g = new THREE.Group();
+ 
+        const top    = new THREE.Mesh(new THREE.BoxGeometry(W, T, D), frameMat);
+        top.position.set(0, cy + H/2 - T/2, 0);
+        const bottom = new THREE.Mesh(new THREE.BoxGeometry(W, T, D), frameMat);
+        bottom.position.set(0, cy - H/2 + T/2, 0);
+        const left   = new THREE.Mesh(new THREE.BoxGeometry(T, H, D), frameMat);
+        left.position.set(-W/2 + T/2, cy, 0);
+        const right  = new THREE.Mesh(new THREE.BoxGeometry(T, H, D), frameMat);
+        right.position.set(W/2 - T/2, cy, 0);
+        g.add(top, bottom, left, right);
+ 
+        // Thin "glass" pane — the mirror/reflection-like surface the enemy is frozen behind
+        const glass = new THREE.Mesh(new THREE.PlaneGeometry(W - T*1.5, H - T*1.5), glassMat);
+        glass.position.set(0, cy, 0.02);
+        g.add(glass);
+ 
+        g.position.copy(entry.mesh.position);
+        g.rotation.y = entry.mesh.rotation.y;
+        scene.add(g);
+ 
+        this._frames.set(entry.state, { group: g, entry, frameMat, glassMat });
+    },
+ 
+    _removeFrame(entry, shatter) {
+        const frameData = this._frames.get(entry.state);
+        if (!frameData) return;
+        this._frames.delete(entry.state);
+        const { group, frameMat, glassMat } = frameData;
+        if (shatter && entry.mesh) this._shatterEffect(entry.mesh.position.clone());
+        if (scene) scene.remove(group);
+        group.children.forEach(m => m.geometry && m.geometry.dispose());
+        frameMat.dispose(); glassMat.dispose();
+    },
+ 
+    // Glass-shard burst — plays on both timer expiry and attack-break
+    _shatterEffect(pos) {
+        if (!scene) return;
+        const t0 = performance.now(), dur = 620;
+        const group = new THREE.Group();
+        group.position.copy(pos).add(new THREE.Vector3(0, 1.5, 0));
+        scene.add(group);
+ 
+        const shards = [];
+        const shardMat = new THREE.MeshStandardMaterial({
+            color: 0xcfeeff, emissive: 0x6fc7ff, emissiveIntensity: 1.4,
+            transparent: true, opacity: 0.95, metalness: 0.4, roughness: 0.1, side: THREE.DoubleSide
+        });
+        for (let i = 0; i < 14; i++) {
+            const size = 0.06 + Math.random() * 0.10;
+            const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size * 1.6), shardMat.clone());
+            m.position.set((Math.random()-0.5)*0.3, (Math.random()-0.5)*0.6, (Math.random()-0.5)*0.3);
+            m.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+            const dir = new THREE.Vector3(Math.random()-0.5, Math.random()*0.6+0.1, Math.random()-0.5).normalize();
+            m.userData.vel = dir.multiplyScalar(2.4 + Math.random()*2.2);
+            group.add(m);
+            shards.push(m);
+        }
+ 
+        // Brief light-blue DOM flash — mirrors the existing spawnMarkHitFX convention
+        const fl = document.createElement('div');
+        fl.style.cssText = 'position:fixed;inset:0;background:rgba(120,200,255,0.14);pointer-events:none;z-index:9998;transition:opacity 0.24s';
+        document.body.appendChild(fl);
+        requestAnimationFrame(() => { fl.style.opacity = '0'; setTimeout(() => fl.remove(), 260); });
+ 
+        (function tick() {
+            const t = Math.min(1, (performance.now() - t0) / dur);
+            shards.forEach(m => {
+                m.position.addScaledVector(m.userData.vel, 0.016);
+                m.userData.vel.multiplyScalar(0.92);
+                m.userData.vel.y -= 0.10;
+                m.material.opacity = 0.95 * (1 - t);
+                m.rotation.x += 0.2; m.rotation.y += 0.15;
+            });
+            if (t < 1) {
+                requestAnimationFrame(tick);
+            } else {
+                scene.remove(group);
+                shards.forEach(m => { m.geometry.dispose(); m.material.dispose(); });
+            }
+        })();
+    }
+};
+ 
+// ════════════════════════════════════════════════════════
+// NAOYA VFX — light-blue afterimages / speed trails.
+// Purely additive: every entry point checks currentCharacterId
+// itself, so it is a complete no-op for Toji and Nanami.
+// ════════════════════════════════════════════════════════
+const NaoyaVFX = {
+    _lastTrailSpawn: 0,
+    TRAIL_INTERVAL_MS: 55,
+ 
+    // Ticked every frame from runGameLoop — spawns a trail afterimage while dashing
+    update(now) {
+        if (currentCharacterId !== 'NAOYA' || !pMesh) return;
+        if (GAME_STATE.player.isDashing && now - this._lastTrailSpawn > this.TRAIL_INTERVAL_MS) {
+            this._lastTrailSpawn = now;
+            this._spawnAfterimage();
+        }
+    },
+ 
+    // Called from executeAttackPipeline right after a Naoya M1 hit lands
+    onM1Hit(step) {
+        if (currentCharacterId !== 'NAOYA') return;
+        this._spawnAfterimage();
+        if (step === 4) setTimeout(() => this._spawnAfterimage(), 40);   // extra flourish on the Projection strike
+    },
+ 
+    _spawnAfterimage() {
+        if (!scene || !pMesh) return;
+        const clone = pMesh.clone(true);
+        const mats = [];
+        clone.traverse(obj => {
+            if (obj.isMesh) {
+                const m = new THREE.MeshBasicMaterial({ color: 0x8fd6ff, transparent: true, opacity: 0.35, depthWrite: false });
+                obj.material = m; obj.castShadow = false;
+                mats.push(m);
+            }
+        });
+        scene.add(clone);
+        const t0 = performance.now(), dur = 260;
+        (function tick() {
+            const t = Math.min(1, (performance.now() - t0) / dur);
+            mats.forEach(m => { m.opacity = 0.35 * (1 - t); });
+            if (t < 1) {
+                requestAnimationFrame(tick);
+            } else {
+                scene.remove(clone);
+                mats.forEach(m => m.dispose());
+            }
+        })();
+    }
+};
+ 
 function applyDamageToPlayer(dmgOverride, attackerEntry) {
     if(GAME_STATE.player.hp<=0||GAME_STATE.player.isDashing) return;
     // Hyperarmor: invulnerable during awakening animation
@@ -3419,6 +3706,8 @@ function runGameLoop(timestamp) {
         });
         updateWalkAnimation(delta,now);
         WeaponVisualController.update(now);
+        NaoyaProjectionSystem.update(now);
+        NaoyaVFX.update(now);
         processCameraPhysics(delta);
  
         // Passive HP regen perks
@@ -3464,7 +3753,7 @@ function updateWalkAnimation(delta,now) {
         const prog=(now-GAME_STATE.player.attackStartTime)/wDur;
         if(prog<1.0){
             // ── Resolve this hit's animation definition ──
-            const animKey = wep===WEAPONS.KATANA ? 'KATANA' : wep===WEAPONS.CLEAVER ? 'CLEAVER' : 'SPEAR';
+            const animKey = wep===WEAPONS.KATANA ? 'KATANA' : wep===WEAPONS.CLEAVER ? 'CLEAVER' : wep===WEAPONS.FISTS ? 'FISTS' : 'SPEAR';
             const hitIdx  = Math.max(0, (combatFX.activeM1Step||1) - 1);
             const h       = ANIM_MAP[animKey][hitIdx];
  
@@ -3490,6 +3779,14 @@ function updateWalkAnimation(delta,now) {
             // Upper-body lateral lean — mirrors the shoulder direction
             rig.upper.rotation.z = h.bodyLeanZ * tiltEnv;
  
+            // Optional body spin (currently only Naoya's spinning-kick hit uses this —
+            // every other weapon's frame data omits `spinY`, so this is a no-op for them)
+            if (h.spinY !== undefined) {
+                rig.upper.rotation.y = h.spinY * Math.sin(prog * Math.PI);
+            } else if (rig.upper.rotation.y !== 0) {
+                rig.upper.rotation.y = 0;
+            }
+ 
             // Forward lunge — peaks at mid-swing, returns to rest
             rig.upper.position.z = -h.lungeZ * Math.sin(prog * Math.PI);
         } else {
@@ -3498,6 +3795,7 @@ function updateWalkAnimation(delta,now) {
     } else {
         rig.rS.rotation.x=sw*0.22; rig.rS.rotation.z=-0.14; rig.rE.rotation.x=0.35;
         rig.upper.rotation.z=moving?sw*0.025:0;
+        rig.upper.rotation.y=0;   // reset spin (only Naoya's kick frame ever sets this)
         rig.upper.position.z=0;   // reset lunge
     }
     rig.lS.rotation.x=-sw*0.32; rig.lS.rotation.z=0.14; rig.lE.rotation.x=0.12;
@@ -3537,6 +3835,14 @@ function processPlayerLocomotion(delta,now) {
 function processEnemyAI(entry,delta,now) {
     const state=entry.state, mesh=entry.mesh;
     if(state.hp<=0) return;
+ 
+    // ── Naoya Projection: trapped enemies are fully frozen — no movement, no attack ──
+    if(state.projectionTrapped) {
+        mesh.position.x=Math.max(-38,Math.min(38,mesh.position.x));
+        mesh.position.z=Math.max(-38,Math.min(38,mesh.position.z));
+        state.position.copy(mesh.position);
+        return;
+    }
  
     // ── Knockback velocity — only the one enemy that was actually hit ──
     if(combatFX.knockbackTargetMesh===mesh && combatFX.knockbackVel.lengthSq() > 0.004) {
@@ -3618,3 +3924,7 @@ window.onload = init;
 </body>
 </html>
  
+ 
+
+
+
