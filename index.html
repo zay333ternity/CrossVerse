@@ -1,6 +1,7 @@
 
 
 Index · HTML
+Syntax highlighting has been disabled due to code size.
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -742,7 +743,7 @@ const CharacterData = {
         strengths:['Highest Mobility','Extremely Fast Attacks','Strong Combo Pressure','Unique Crowd Control Through Projection','Excellent Chase Potential'],
         weaknesses:['Lower Durability','Requires Maintaining Combos','Mistakes Are Punished Heavily','High Skill Ceiling'],
         weapons:['None — Projection Sorcery'],
-        image:'naoya.jpeg',
+        image:'naoyapfp.jpeg',
         playable:true,
         color:'#7fd4ff'
         // NOTE: no `awakening` block yet — Naoya's awakening is out of scope for this
@@ -931,7 +932,7 @@ const MenuUI = {
         CharacterSelect.hide(() => {
             // ── Apply character config before HUD shows ──
             _applyCharacterConfig(currentCharacterId);
- 
+
             // Reveal game HUD
             document.getElementById('ui-layer').style.opacity = '1';
             document.getElementById('ui-layer').style.pointerEvents = 'auto';
@@ -939,19 +940,31 @@ const MenuUI = {
             dash.classList.add('game-visible');
             document.getElementById('awakening-bar-wrap').classList.add('game-visible');
             document.getElementById('ability-bar').classList.add('game-visible');
- 
+
             // Kick off gameplay
             gameStarted = true;
- 
+
             // "FIGHT!" flash
             const msg = document.getElementById('status-msg');
             msg.innerText = 'FIGHT!';
             msg.style.color = '#f1c40f';
             msg.style.opacity = '1';
             setTimeout(() => { msg.style.opacity = '0'; }, 1600);
- 
+
             // Hand off to the wave manager (additive — does not touch combat internals)
             WaveManager.startRun();
+
+            // Secret Awakening is once-per-run — reset for this fresh run
+            SECRET_AWAKENING_STATE.phase = 'idle';
+            SECRET_AWAKENING_STATE.used = false;
+            SECRET_AWAKENING_STATE.cursedActive = false;
+            SECRET_AWAKENING_STATE.emergenceGroup = null;
+            SECRET_AWAKENING_STATE.emergenceHands = null;
+            if (SECRET_AWAKENING_STATE.cursedGroup && scene) {
+                scene.remove(SECRET_AWAKENING_STATE.cursedGroup);
+                SECRET_AWAKENING_STATE.cursedGroup = null;
+            }
+            if (pMesh) pMesh.visible = true;
         });
     }
 };
@@ -961,7 +974,7 @@ const MenuUI = {
 // ════════════════════════════════════════════════════════
 let gameStarted = false;
 let currentCharacterId = 'TOJI';   // set in MenuUI.startGame from CharacterSelect.selected
- 
+
 // ── Character config applied once at game-start ──────────────────────────────
 // Adds/removes Nanami's iconic green round glasses on the player rig.
 // Must receive the plain rig object (GAME_STATE.player.rig) — glasses are
@@ -973,54 +986,54 @@ function _applyNanamiGlasses(charId, rig) {
     const old = upper.getObjectByName('nanami_glasses');
     if (old) upper.remove(old);
     if (charId !== 'NANAMI') return;
- 
+
     const glassGroup = new THREE.Group();
     glassGroup.name = 'nanami_glasses';
- 
+
     // Positions are in upper-local space; head center is at y≈2.14
     const EY = 2.05, EZ = 0.22;  // eye Y, eye Z (front of face)
- 
+
     const mLens  = new THREE.MeshStandardMaterial({ color:0x2d6b2d, transparent:true, opacity:0.68, metalness:0.1, roughness:0.15 });
     const mFrame = new THREE.MeshStandardMaterial({ color:0x1a1a1a, roughness:0.60 });
- 
+
     // Left lens  (screen-left = model's right)
     const lL = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.082, 0.018, 16), mLens);
     lL.rotation.x = Math.PI / 2;
     lL.position.set(-0.11, EY, EZ);
     glassGroup.add(lL);
- 
+
     // Right lens
     const lR = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.082, 0.018, 16), mLens);
     lR.rotation.x = Math.PI / 2;
     lR.position.set( 0.11, EY, EZ);
     glassGroup.add(lR);
- 
+
     // Frame ring left
     const rL = new THREE.Mesh(new THREE.TorusGeometry(0.082, 0.009, 8, 20), mFrame);
     rL.position.set(-0.11, EY, EZ);
     glassGroup.add(rL);
- 
+
     // Frame ring right
     const rR = new THREE.Mesh(new THREE.TorusGeometry(0.082, 0.009, 8, 20), mFrame);
     rR.position.set( 0.11, EY, EZ);
     glassGroup.add(rR);
- 
+
     // Bridge
     const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.044, 0.010, 0.010), mFrame);
     bridge.position.set(0, EY, EZ);
     glassGroup.add(bridge);
- 
+
     upper.add(glassGroup);
 }
- 
+
 function _applyCharacterConfig(charId) {
     const char = CharacterData[charId];
     if(!char) return;
- 
+
     // HUD player name
     const nameEl = document.getElementById('player-name');
     if(nameEl) nameEl.innerText = char.name;
- 
+
     // Awakening system config
     if(charId === 'NANAMI'){
         AwakeningController.setConfig({
@@ -1028,6 +1041,13 @@ function _applyCharacterConfig(charId) {
             speedMul: 1.22, meterGain: 8,
             awakeningLabel: 'OVERTIME', awakeningColor: '#d4a017',
             cutsceneType: 'nanami'   // drives Nanami-specific 3 s awakening animation
+        });
+    } else if(charId === 'NAOYA'){
+        AwakeningController.setConfig({
+            displayName: 'VENGEANCE OF ZENIN', damageMul: 1.10, damageReceiveMul: 0.85,
+            speedMul: 1.55, meterGain: 9, activeDuration: 11000,
+            awakeningLabel: 'VENGEANCE OF ZENIN', awakeningColor: '#4fc3ff',
+            cutsceneType: 'naoya'   // drives Naoya-specific ~1.2 s speed-burst awakening
         });
     } else {
         // Toji (default)
@@ -1037,16 +1057,16 @@ function _applyCharacterConfig(charId) {
             awakeningLabel: 'THE ONE WHO LEFT IT ALL BEHIND', awakeningColor: '#7c3aed'
         });
     }
- 
+
     // Ability system
     AbilitySystem.setCharacter(charId);
- 
+
     // Weapon
     const startWep = (charId === 'NANAMI') ? WEAPONS.CLEAVER : (charId === 'NAOYA') ? WEAPONS.FISTS : WEAPONS.KATANA;
     GAME_STATE.player.currentWeapon = startWep;
     const wepNameEl = document.getElementById('current-weapon-name');
     if(wepNameEl) wepNameEl.innerText = startWep.name;
- 
+
     // Model recolour — match reference image for each character
     const rm = GAME_STATE.player.rigMaterials;
     if(rm && charId === 'NANAMI'){
@@ -1075,7 +1095,7 @@ function _applyCharacterConfig(charId) {
         if(rm.sh) rm.sh.color.setHex(0x1a1a1a);
         rm.sw.roughness = 0.78;
     }
- 
+
     // Body proportions — Naoya reads leaner/faster than Toji's bulkier frame.
     // Weapon models are parented under this same group (via the hand bone), so
     // resetting to 1:1 for every other character keeps their weapons correctly sized.
@@ -1083,13 +1103,13 @@ function _applyCharacterConfig(charId) {
         if(charId === 'NAOYA') pMesh.scale.set(0.94, 1.04, 0.94);
         else pMesh.scale.set(1, 1, 1);
     }
- 
+
     // Nanami glasses — add/remove circular lens frames on the player rig
     _applyNanamiGlasses(charId, GAME_STATE.player.rig);
- 
+
     // Attach the correct starting weapon model to the hand bone
     WeaponAttachmentSystem.attach(startWep);
- 
+
     // Controls overlay — swap weapon hint is Toji-only
     const ctrlEl = document.getElementById('controls-overlay');
     if(ctrlEl){
@@ -1121,7 +1141,7 @@ const GAME_STATE = {
         rotation:0,
         currentWeapon: WEAPONS.KATANA,
         lastAttackTime:0, lastDashTime:0,
-        dashCooldown:1200, isDashing:false, dashEndTime:0,
+        dashCooldown:1200, isDashing:false, dashEndTime:0, abilityLocomotionLock:false,
         dashDir: new THREE.Vector3(),
         handBone:null, rig:null,
         walkTime:0, isAttacking:false, attackStartTime:0,
@@ -1243,6 +1263,10 @@ const TOJI_AWAKENING_STATE = {
     // Nanami OVERTIME awakening fx state
     nanamiEnergyGroup:  null,   // THREE.Group of blue energy fragments
     nanaminiBurstDone:  false,  // prevents double-triggering the energy burst
+    // Naoya VENGEANCE OF ZENIN awakening fx/state
+    naoyaBurstDone:      false,
+    naoyaOrigAttackSpeedMul: 1.0,
+    naoyaOrigAttackCooldownMs: 0,
 };
  
 const AwakeningController = {
@@ -1251,7 +1275,7 @@ const AwakeningController = {
  
     // ── Public queries ──────────────────────────────────
     isActive()      { return TOJI_AWAKENING_STATE.phase === 'active'; },
-    inputLocked()   { return TOJI_AWAKENING_STATE.phase === 'cutscene'; },
+    inputLocked()   { return TOJI_AWAKENING_STATE.phase === 'cutscene' || SecretAwakeningController.inputLocked(); },
     // Character config — set at game-start via setConfig()
     _cfg: { displayName:'THE ONE WHO LEFT IT ALL BEHIND', damageMul:1.25,
             damageReceiveMul:0.82, speedMul:1.22, meterGain:7,
@@ -1292,12 +1316,17 @@ const AwakeningController = {
         s.cutsceneStart = performance.now();
         s.nanaminiBurstDone = false;
         s.nanamiEnergyGroup = null;
+        s.naoyaBurstDone = false;
         this.playAwakeningVoice();
         console.log(`[${this.DISPLAY_NAME}] Cutscene started`);
         if (this._cfg.cutsceneType === 'nanami') {
             // Nanami stays visible — play tie-loosen animation via AbilityAnimController
             // (suppresses walk/idle arms for its 3 s duration)
             AbilityAnimController.play(ABILITY_ANIMS.NANAMI_AWAKENING);
+            return;
+        }
+        if (this._cfg.cutsceneType === 'naoya') {
+            // Naoya stays visible — short speed-burst cutscene, no held pose needed
             return;
         }
         // Toji: hide player for cinematic
@@ -1357,13 +1386,21 @@ const AwakeningController = {
         s.activeStart = performance.now();
         console.log(`[${this.DISPLAY_NAME}] Awakening active — 30 s`);
         // Toji only: player was hidden during cutscene, restore now
-        if(pMesh && this._cfg.cutsceneType !== 'nanami') { pMesh.visible = true; pMesh.position.y = 0; }
+        // (skip if Naoya's Cursed Form is active — that form intentionally keeps pMesh hidden)
+        if(pMesh && this._cfg.cutsceneType !== 'nanami' && !SECRET_AWAKENING_STATE.cursedActive) { pMesh.visible = true; pMesh.position.y = 0; }
         // Speed buff (configurable per character)
         s.origSpeed = GAME_STATE.player.speed;
         GAME_STATE.player.speed *= this._cfg.speedMul;
         // Nanami: faster ratio building during OVERTIME
         if (this._cfg.cutsceneType === 'nanami') {
             GAME_STATE.player.ratioStackBonus = 1;
+        }
+        // Naoya: faster M1 cadence — reuses the existing attackSpeedMul/attackCooldownMs hooks
+        if (this._cfg.cutsceneType === 'naoya') {
+            s.naoyaOrigAttackSpeedMul = GAME_STATE.player.attackSpeedMul;
+            s.naoyaOrigAttackCooldownMs = GAME_STATE.player.attackCooldownMs || 0;
+            GAME_STATE.player.attackSpeedMul = 0.70;
+            GAME_STATE.player.attackCooldownMs = WEAPONS.FISTS.attackSpeed * 0.70;
         }
         // Damage & durability buffs live in getDamageMul / getDamageReceiveMul
         // Remove black hole if still present (Toji only)
@@ -1384,6 +1421,11 @@ const AwakeningController = {
         if (this._cfg.cutsceneType === 'nanami') {
             GAME_STATE.player.ratioStackBonus = 0;
         }
+        // Naoya: restore normal M1 cadence
+        if (this._cfg.cutsceneType === 'naoya') {
+            GAME_STATE.player.attackSpeedMul = s.naoyaOrigAttackSpeedMul !== undefined ? s.naoyaOrigAttackSpeedMul : 1.0;
+            GAME_STATE.player.attackCooldownMs = s.naoyaOrigAttackCooldownMs || 0;
+        }
         // Reset meter
         s.meter = 0;
         document.querySelector('.player-panel')?.classList.remove('awakening-active');
@@ -1396,6 +1438,19 @@ const AwakeningController = {
         if(TOJI_AWAKENING_STATE.phase !== 'cutscene') return false;
         // Nanami awakening: no cinematic camera override — stays in normal gameplay view
         if(this._cfg.cutsceneType === 'nanami') return false;
+        if(this._cfg.cutsceneType === 'naoya') {
+            // Short, subtle zoom toward Naoya — player still reads the action, not a full cutscene
+            const elapsed = performance.now() - TOJI_AWAKENING_STATE.cutsceneStart;
+            const DUR = 1200;
+            if(elapsed >= DUR) return false;
+            const t = elapsed / DUR;
+            const fwd = new THREE.Vector3(Math.sin(GAME_STATE.player.rotation), 0, Math.cos(GAME_STATE.player.rotation));
+            const zoomedBack = 4.2 - t*1.1;   // pulls the camera in slightly over the burst
+            const camPos = pMesh.position.clone().sub(fwd.multiplyScalar(zoomedBack)).add(new THREE.Vector3(0, 2.6, 0));
+            camera.position.lerp(camPos, 9*delta);
+            camera.lookAt(pMesh.position.clone().add(new THREE.Vector3(0, 1.8, 0)));
+            return true;
+        }
         const elapsed = performance.now() - TOJI_AWAKENING_STATE.cutsceneStart;
  
         if(elapsed < 3500) {
@@ -1449,7 +1504,18 @@ const AwakeningController = {
                 if (el >= 3000) this._startActive();
                 return;
             }
- 
+
+            // ── Naoya VENGEANCE OF ZENIN awakening (quick speed-burst, ~1.2 s) ──
+            if (this._cfg.cutsceneType === 'naoya') {
+                if (el >= 150 && !s.naoyaBurstDone) {
+                    s.naoyaBurstDone = true;
+                    this._spawnNaoyaBurst();
+                    combatFX.shakeIntensity = Math.max(combatFX.shakeIntensity, 0.18);
+                }
+                if (el >= 1200) this._startActive();
+                return;
+            }
+
             // ── Toji awakening (original — unchanged) ──
                         // Phase 2 (1.5 s): spawn black hole
             if(el >= 1500 && !s.blackHole) this._spawnBlackHole();
@@ -1484,7 +1550,7 @@ const AwakeningController = {
         }
  
         if(s.phase === 'active') {
-            if(now - s.activeStart >= s.activeDuration) this._endActive();
+            if(now - s.activeStart >= (this._cfg.activeDuration || s.activeDuration)) this._endActive();
         }
     },
  
@@ -1515,7 +1581,7 @@ const AwakeningController = {
         scene.add(g);
         s.nanamiEnergyGroup = g;
     },
- 
+
     _spawnNanamiBurst() {
         if (!pMesh || !scene) return;
         const pos = pMesh.position.clone();
@@ -1542,7 +1608,35 @@ const AwakeningController = {
         document.body.appendChild(fl);
         setTimeout(() => { fl.style.opacity = '0'; setTimeout(() => fl.remove(), 420); }, 75);
     },
- 
+
+    _spawnNaoyaBurst() {
+        if (!pMesh || !scene) return;
+        const pos = pMesh.position.clone();
+        // Expanding light-blue shockwave ring
+        const rGeo = new THREE.TorusGeometry(0.6, 0.09, 6, 24);
+        const rMat = new THREE.MeshBasicMaterial({ color:0x8fd6ff, transparent:true, opacity:0.9 });
+        const ring = new THREE.Mesh(rGeo, rMat);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.copy(pos); ring.position.y = 0.2;
+        scene.add(ring);
+        const t0 = performance.now(), dur = 480;
+        (function tick() {
+            const t = Math.min(1, (performance.now() - t0) / dur);
+            const e = 1 - Math.pow(1 - t, 2);
+            ring.scale.set(1 + e * 7, 1 + e * 7, 1);
+            rMat.opacity = Math.max(0, 0.9 - t * 1.2);
+            if (t < 1) requestAnimationFrame(tick);
+            else { scene.remove(ring); rGeo.dispose(); rMat.dispose(); }
+        })();
+        // A quick radial burst of afterimages — reuses the existing, unmodified NaoyaVFX clone system
+        for (let i = 0; i < 5; i++) setTimeout(() => NaoyaVFX._spawnAfterimage(), i * 35);
+        // Light-blue DOM flash (distinct tint from Nanami's gold/blue and Toji's purple)
+        const fl = document.createElement('div');
+        fl.style.cssText = 'position:fixed;inset:0;background:rgba(90,190,255,0.22);pointer-events:none;z-index:9999;transition:opacity 0.32s';
+        document.body.appendChild(fl);
+        setTimeout(() => { fl.style.opacity = '0'; setTimeout(() => fl.remove(), 350); }, 60);
+    },
+
     // ── Meter UI ─────────────────────────────────────────
     _refreshMeterUI() {
         const m = TOJI_AWAKENING_STATE.meter;
@@ -1675,6 +1769,12 @@ const AbilitySystem = {
         S3:{ name:'Calculation Step',            cd:14000, lastUsed:0 },
         S4:{ name:'Ratio Execution',             cd:14000, lastUsed:0 }
     },
+    _DEFS_NAOYA: {
+        S1:{ name:'Projection Break',            cd:6000,  lastUsed:0 },
+        S2:{ name:"Heir's Rush",                 cd:9000,  lastUsed:0 },
+        S3:{ name:'Zenin Edge',                  cd:10000, lastUsed:0 },
+        S4:{ name:'Projection Pursuit',          cd:13000, lastUsed:0 }
+    },
     defs: {   // default to Toji so pre-game UI is safe
         S1:{ name:'Split Soul Flurry',       cd:8000,  lastUsed:0 },
         S2:{ name:'Heavenly Nullification',  cd:12000, lastUsed:0 },
@@ -1682,7 +1782,7 @@ const AbilitySystem = {
         S4:{ name:'Mirage Step',             cd:10000, lastUsed:0 }
     },
     setCharacter(charId) {
-        const src = charId==='NANAMI' ? this._DEFS_NANAMI : this._DEFS_TOJI;
+        const src = charId==='NANAMI' ? this._DEFS_NANAMI : charId==='NAOYA' ? this._DEFS_NAOYA : this._DEFS_TOJI;
         this.defs = {};
         for(const k in src) this.defs[k] = Object.assign({}, src[k], { lastUsed:0 });
         ['S1','S2','S3','S4'].forEach(k => {
@@ -1700,6 +1800,7 @@ const AbilitySystem = {
         if(now-ab.lastUsed < ab.cd*this._cdMul()) return;
         ab.lastUsed=now;
         if(currentCharacterId==='NANAMI') this['_nanami_'+key.toLowerCase()]();
+        else if(currentCharacterId==='NAOYA') this['_naoya_'+key.toLowerCase()]();
         else this['_'+key.toLowerCase()]();
     },
  
@@ -1761,7 +1862,7 @@ const AbilitySystem = {
             }
         },260);
     },
- 
+
     // ════════════════════════════════════════════════════
     // NANAMI ABILITIES
     // ════════════════════════════════════════════════════
@@ -1788,7 +1889,7 @@ const AbilitySystem = {
             }
         },100);
     },
- 
+
     // S2 — Collapse Cleave: wide downward slam, heavy hitstop + strong shake
     _nanami_s2() {
         AbilityAnimController.play(ABILITY_ANIMS.S2);
@@ -1804,7 +1905,7 @@ const AbilitySystem = {
             setTimeout(()=>{ fl.style.opacity='0'; setTimeout(()=>fl.remove(),330); },55);
         }
     },
- 
+
     // S3 — Calculation Step: instantly guarantees a Ratio Mark on the targeted enemy
     _nanami_s3() {
         AbilityAnimController.play(ABILITY_ANIMS.S3);
@@ -1822,13 +1923,13 @@ const AbilitySystem = {
             }
         },220);
     },
- 
+
     // S4 — Ratio Execution (two paths):
     //   NOT MARKED → instantly apply mark (7 stacks), deal moderate damage + blue burst
     //   MARKED     → consume mark, massive damage, Black Flash VFX (no floating text)
     _nanami_s4() {
         if(!GAME_STATE.enemy || GAME_STATE.enemy.hp<=0) return;
- 
+
         if(!GAME_STATE.enemy.ratioMarked){
             // ── Path A: apply mark ──
             AbilityAnimController.play(ABILITY_ANIMS.S4);
@@ -1848,7 +1949,7 @@ const AbilitySystem = {
             },200);
             return;
         }
- 
+
         // ── Path B: execute marked enemy with Black Flash ──
         AbilityAnimController.play(ABILITY_ANIMS.S4);
         GAME_STATE.enemy.ratioMarked=false;
@@ -1862,7 +1963,146 @@ const AbilitySystem = {
             }
         },200);
     },
- 
+
+
+    // ════════════════════════════════════════════════════
+    // NAOYA ABILITIES — speed, pressure, control. No raw burst damage.
+    // Reuses: ABILITY_ANIMS.S1-S4 (generic anim frames, same as Toji/Nanami),
+    // NaoyaVFX._spawnAfterimage/onM1Hit (unmodified), NaoyaProjectionSystem.release
+    // (unmodified — only its public API is called to read/break an active frame),
+    // _findMeleeTarget/_mkAbWep/applyDamageToEnemy (the same hit pipeline every
+    // other character's abilities already use).
+    // ════════════════════════════════════════════════════
+    // S1 — Projection Break: a Projection-Sorcery blink, not a normal dash.
+    // Naoya crosses the gap in a handful of discrete position jumps (rather
+    // than a smooth slide) so it reads as a series of teleports; each jump
+    // leaves a light-blue afterimage via the existing trail system.
+    _naoya_s1() {
+        if(!eMesh || GAME_STATE.enemy.hp<=0) return;
+        AbilityAnimController.play(ABILITY_ANIMS.S1);
+        const wep=WEAPONS.FISTS;
+        const awakened=AwakeningController.isActive();
+        const dir=new THREE.Vector3().subVectors(eMesh.position,pMesh.position).normalize();
+        const gap=Math.max(0,pMesh.position.distanceTo(eMesh.position)-1.6);
+        const travel=Math.min(awakened?8.0:6.5,gap);
+        const startPos=pMesh.position.clone();
+        const STEPS=awakened?6:4, STEP_MS=awakened?20:28;   // more, faster teleport jumps while awakened
+        for(let i=1;i<=STEPS;i++){
+            setTimeout(()=>{
+                const t=i/STEPS;
+                pMesh.position.copy(startPos).addScaledVector(dir,travel*t);
+                pMesh.position.x=Math.max(-38,Math.min(38,pMesh.position.x));
+                pMesh.position.z=Math.max(-38,Math.min(38,pMesh.position.z));
+                GAME_STATE.player.position.copy(pMesh.position);
+                NaoyaVFX._spawnAfterimage();
+            },i*STEP_MS);
+        }
+        setTimeout(()=>{
+            if(GAME_STATE.enemy.hp>0 && pMesh.position.distanceTo(eMesh.position)<=wep.range+1.5){
+                const d=new THREE.Vector3().subVectors(eMesh.position,pMesh.position).normalize();
+                const dmgMul=awakened?2.6:2.0, shakeMag=awakened?0.30:0.22;
+                applyDamageToEnemy(_mkAbWep(Math.round(wep.damage*dmgMul),awakened?14:10,80,shakeMag),d,1);
+                NaoyaVFX.onM1Hit(4);   // reuse the hit-4 double-afterimage flourish for the reappearance strike
+                if(awakened) setTimeout(()=>NaoyaVFX._spawnAfterimage(),30);   // stronger impact — one extra image
+            }
+        },STEPS*STEP_MS+15);
+    },
+
+    // S2 — Heir's Rush: a fast punch barrage that extends a combo rather than
+    // ending one. If the current target is already inside a Projection Frame,
+    // it upgrades into the Pursuit variant — more hits, faster pace, no changes
+    // to the frame itself beyond what Naoya's own hits already do via M1.
+    _naoya_s2() {
+        if(!eMesh || GAME_STATE.enemy.hp<=0) return;
+        if(pMesh.position.distanceTo(eMesh.position)>6.5) return;
+        AbilityAnimController.play(ABILITY_ANIMS.S2);
+        const wep=WEAPONS.FISTS;
+        const awakened=AwakeningController.isActive();
+        const trapped=GAME_STATE.enemy.projectionTrapped===true;   // read-only check — Projection system untouched
+        let hits=trapped?6:4, stepMs=trapped?85:120;
+        if(awakened){ hits+=2; stepMs=Math.round(stepMs*0.72); }   // more attack speed + more hits while awakened
+        for(let i=0;i<hits;i++){
+            setTimeout(()=>{
+                if(GAME_STATE.enemy.hp<=0) return;
+                const d=new THREE.Vector3().subVectors(eMesh.position,pMesh.position).normalize();
+                applyDamageToEnemy(_mkAbWep(Math.round(wep.damage*0.55),4,55,0.14),d,2);
+                NaoyaVFX._spawnAfterimage();
+                if(awakened) setTimeout(()=>NaoyaVFX._spawnAfterimage(),18);   // extra afterimage per hit while awakened
+            },i*stepMs);
+        }
+    },
+
+    // S3 — Zenin Edge: low initial damage, applies stacking Bleed (see the
+    // NAOYA_BLEED_* constants/processEnemyAI tick, added alongside the
+    // existing Ratio Mark / Projection state fields on the enemy).
+    _naoya_s3() {
+        if(!eMesh || GAME_STATE.enemy.hp<=0) return;
+        if(pMesh.position.distanceTo(eMesh.position)>4.5) return;
+        AbilityAnimController.play(ABILITY_ANIMS.S3);
+        const awakened=AwakeningController.isActive();
+        const dir=new THREE.Vector3().subVectors(eMesh.position,pMesh.position).normalize();
+        applyDamageToEnemy(_mkAbWep(awakened?16:12,6,70,0.16),dir,3);
+        const st=GAME_STATE.enemy;
+        if(st.hp>0){
+            const stacksToAdd=awakened?2:1;   // awakened setup applies extra stacks
+            st.bleedStacks=Math.min(NAOYA_BLEED_MAX_STACKS,(st.bleedStacks||0)+stacksToAdd);
+            st.bleedEndTime=performance.now()+NAOYA_BLEED_DURATION_MS;
+            if(!st.bleedNextTick || st.bleedStacks===stacksToAdd) st.bleedNextTick=performance.now()+NAOYA_BLEED_TICK_MS;
+        }
+    },
+
+    // S4 — Projection Pursuit: Phase 1 is a short PLAYER-STEERED dash (reads
+    // live WASD input every frame, never auto-aims), Phase 2 is a flying kick
+    // thrown in whatever direction the player was holding when the dash ended.
+    // Locks out processPlayerLocomotion for the dash's duration via the new
+    // abilityLocomotionLock flag so the two movement sources don't fight.
+    _naoya_s4() {
+        if(!pMesh) return;
+        AbilityAnimController.play(ABILITY_ANIMS.S4);
+        GAME_STATE.player.abilityLocomotionLock=true;
+        const awakened=AwakeningController.isActive();
+        const DASH_MS=awakened?700:480;
+        const speed=GAME_STATE.player.speed*(awakened?7.6:6.5);
+        const trailInterval=awakened?30:45;
+        const t0=performance.now();
+        let lastDir=new THREE.Vector3(Math.sin(GAME_STATE.player.rotation),0,Math.cos(GAME_STATE.player.rotation));
+        let lastImgTime=0;
+        (function tick(now){
+            const el=now-t0;
+            if(el>=DASH_MS){
+                GAME_STATE.player.abilityLocomotionLock=false;
+                // ── Phase 2: Flying Kick — always the player's final dash direction, never redirected toward an enemy ──
+                const dir=lastDir.clone().normalize();
+                GAME_STATE.player.rotation=Math.atan2(dir.x,dir.z);
+                pMesh.rotation.y=GAME_STATE.player.rotation;
+                NaoyaVFX._spawnAfterimage();
+                if(awakened) setTimeout(()=>NaoyaVFX._spawnAfterimage(),25);
+                const wep=WEAPONS.FISTS;
+                const kickWep=Object.assign({},wep,{range:wep.range+(awakened?1.6:1.0)});
+                const targetEntry=_findMeleeTarget(kickWep);
+                if(targetEntry && targetEntry.state.hp>0){
+                    const wasTrapped=targetEntry.state.projectionTrapped===true;
+                    const dmgMul=awakened?4.2:3.2, kb=awakened?42:30, shakeMag=awakened?0.58:0.42;
+                    applyDamageToEnemy(_mkAbWep(Math.round(wep.damage*dmgMul),kb,220,shakeMag),dir,4);
+                    if(wasTrapped) NaoyaProjectionSystem.release(targetEntry,true);   // Projection Frame: Break — reuses the existing shatter VFX as-is
+                }
+                return;
+            }
+            const mv=new THREE.Vector3();
+            if(GAME_STATE.input.forward)  mv.z-=1;
+            if(GAME_STATE.input.backward) mv.z+=1;
+            if(GAME_STATE.input.left)     mv.x-=1;
+            if(GAME_STATE.input.right)    mv.x+=1;
+            if(mv.lengthSq()>0){ mv.normalize(); lastDir=mv; }
+            pMesh.position.addScaledVector(lastDir,speed*0.016);
+            pMesh.position.x=Math.max(-38,Math.min(38,pMesh.position.x));
+            pMesh.position.z=Math.max(-38,Math.min(38,pMesh.position.z));
+            GAME_STATE.player.position.copy(pMesh.position);
+            if(now-lastImgTime>trailInterval){ lastImgTime=now; NaoyaVFX._spawnAfterimage(); }
+            requestAnimationFrame(tick);
+        })(performance.now());
+    },
+
     updateUI(now) {
         const cdm=this._cdMul();
         ['S1','S2','S3','S4'].forEach(key=>{
@@ -2294,7 +2534,11 @@ function createEnemy(opts) {
         ratioMarked: false,
         // ── Naoya Projection system ──
         projectionTrapped: false,
-        projectionEndTime: 0
+        projectionEndTime: 0,
+        // ── Naoya Bleed (Zenin Edge, S3) ──
+        bleedStacks: 0,
+        bleedEndTime: 0,
+        bleedNextTick: 0
     };
  
     // Lightweight DOM floating health bar (no extra 3D geometry/texture per enemy)
@@ -2305,7 +2549,7 @@ function createEnemy(opts) {
     barEl.appendChild(fillEl);
     const layer = document.getElementById('enemy-floating-bars');
     if (layer) layer.appendChild(barEl);
- 
+
     // Nanami Ratio Mark floating "7:3" label
     const markEl = document.createElement('div');
     markEl.className = 'ratio-mark-label';
@@ -2315,7 +2559,7 @@ function createEnemy(opts) {
         'color:#f1c40f;font-size:18px;font-weight:900;letter-spacing:2px;'+
         'transform:translate(-50%,-100%);z-index:45;font-family:inherit;';
     if (layer) layer.appendChild(markEl);
- 
+
     return { state, mesh, barEl, barFillEl: fillEl, markEl };
 }
  
@@ -2528,11 +2772,11 @@ const WeaponManager = {
         root.position.set(0.07, -0.14, 0.16);
         return root;
     },
- 
+
     _buildCleaver() {
         const root = new THREE.Group();
         const M = this._mesh.bind(this);
- 
+
         // ══ RATIO CLEAVER — Nanami's wide bone-cleaver (white blade, dark grip) ══
         // Reference: wide white rectangular blade, dark leather-wrap handle
         const mBlade  = new THREE.MeshStandardMaterial({ color:0xf0efea, metalness:0.12, roughness:0.62 }); // off-white
@@ -2542,7 +2786,7 @@ const WeaponManager = {
         const mGuard  = new THREE.MeshStandardMaterial({ color:0x5a4030, roughness:0.80 });                 // dark brown guard
         const mGrip   = new THREE.MeshStandardMaterial({ color:0x2a1a0e, roughness:0.95 });                 // very dark leather
         const mBand   = new THREE.MeshStandardMaterial({ color:0x1a0e06, roughness:0.98 });
- 
+
         // ── Wide rectangular blade ──
         M(new THREE.BoxGeometry(0.32, 0.72, 0.040), mBlade,  0,      0.55,  0, root);
         M(new THREE.BoxGeometry(0.32, 0.72, 0.012), mEdge,   0,      0.55,  0.026, root);
@@ -2552,11 +2796,11 @@ const WeaponManager = {
         M(new THREE.BoxGeometry(0.32, 0.030, 0.040), mEdge,   0,      0.964, 0, root);
         // Heel notch — signature Nanami cleaver detail
         M(new THREE.BoxGeometry(0.062, 0.048, 0.045), mSpine, -0.129, 0.175, 0, root);
- 
+
         // ── Guard ──
         M(new THREE.BoxGeometry(0.360, 0.058, 0.095), mGuard,  0, 0.115,  0, root);
         M(new THREE.BoxGeometry(0.360, 0.025, 0.080), mGuard,  0, 0.148,  0, root);
- 
+
         // ── Handle ──
         M(new THREE.BoxGeometry(0.075, 0.29, 0.075), mGrip,  0, -0.105, 0, root);
         for (let i = 0; i < 4; i++) {
@@ -2564,13 +2808,13 @@ const WeaponManager = {
         }
         // Pommel
         M(new THREE.BoxGeometry(0.095, 0.055, 0.095), mGuard, 0, -0.295, 0, root);
- 
+
         // Cow-print spots — dark patches on the white blade
         M(new THREE.BoxGeometry(0.10, 0.14, 0.042), mSpot,  0.04,  0.72,  0, root);
         M(new THREE.BoxGeometry(0.12, 0.10, 0.042), mSpot, -0.06,  0.55,  0, root);
         M(new THREE.BoxGeometry(0.07, 0.09, 0.042), mSpot,  0.08,  0.38,  0, root);
         M(new THREE.BoxGeometry(0.08, 0.06, 0.042), mSpot, -0.03,  0.26,  0, root);
- 
+
         // FIX: blade was appearing backwards — rotate 180° on Y to face forward correctly
         root.rotation.set(-Math.PI * 0.52, Math.PI, 0.06);
         root.position.set(0.07, -0.20, 0.18);
@@ -2854,7 +3098,7 @@ onEnemyDeath(entry) {
     }
     if (entry.mesh) entry.mesh.visible = false;
     if (entry.barEl) entry.barEl.style.display = 'none';
- 
+
     // Naoya Projection: don't leave an orphaned frame if the trapped enemy died (e.g. from a perk/DoT)
     if (entry.state.projectionTrapped) NaoyaProjectionSystem.release(entry, false);
  
@@ -2900,7 +3144,7 @@ _startPerkSelection() {
         // If no perk UI: do NOT set active=false — let countdown in update() drive next wave
     }, 700);
 },
- 
+
 resumeAfterPerks() {
     this.active = true;
     // Countdown still running via update() — nothing else needed
@@ -3109,18 +3353,23 @@ const ANIM_MAP = {
         { fwd:WEAPONS.CLEAVER.arcForward, ang:WEAPONS.CLEAVER.arcAngle, shoulderZ: 0.00, elbowStart:0.95, bodyLeanZ: 0.00, lungeZ:0.50 }
     ],
     // Fists — Naoya's unarmed combo: fast, tight, minimal wasted movement.
-    // Hit 3 adds an optional `spinY` field (new, opt-in — see updateWalkAnimation)
-    // for the spinning kick; every other weapon's frames simply omit this field
-    // and are completely unaffected.
+    // Unlike the weapon combos above, each hit gets its OWN fwd/ang curve
+    // (rather than reusing one shared WEAPONS.FISTS.arcForward/arcAngle for
+    // all four) so every strike has a distinct shape: a short snapping jab,
+    // a tight hooking elbow, a whipping spin, and a maximum-velocity thrust.
+    // Hit 3 uses the optional `spinY` field (see updateWalkAnimation) for the
+    // spinning kick; every other weapon's frames omit it and are unaffected.
     FISTS: [
-        // Hit 1 — fast palm strike: short, sharp, minimal lean
-        { fwd:WEAPONS.FISTS.arcForward, ang:WEAPONS.FISTS.arcAngle, shoulderZ: 0.08, elbowStart:0.20, bodyLeanZ: 0.05, lungeZ:0.14 },
-        // Hit 2 — elbow strike: tight lateral snap, elbow already cocked
-        { fwd:WEAPONS.FISTS.arcForward, ang:WEAPONS.FISTS.arcAngle, shoulderZ:-0.34, elbowStart:0.95, bodyLeanZ:-0.12, lungeZ:0.10 },
-        // Hit 3 — spinning kick: body rotates through the strike
-        { fwd:WEAPONS.FISTS.arcForward, ang:WEAPONS.FISTS.arcAngle, shoulderZ: 0.20, elbowStart:0.15, bodyLeanZ: 0.22, lungeZ:0.06, spinY:1.35 },
-        // Hit 4 — high-speed Projection strike: fastest, most linear, biggest lunge
-        { fwd:WEAPONS.FISTS.arcForward, ang:WEAPONS.FISTS.arcAngle, shoulderZ: 0.00, elbowStart:0.10, bodyLeanZ: 0.00, lungeZ:0.30 }
+        // Hit 1 — fast palm strike: very short travel, snaps out and back almost instantly
+        { fwd:0.22, ang:0.62, shoulderZ: 0.10, elbowStart:0.32, bodyLeanZ: 0.06, lungeZ:0.16 },
+        // Hit 2 — quick elbow strike: compact hooking arc, elbow already sharply cocked
+        { fwd:0.16, ang:0.88, shoulderZ:-0.42, elbowStart:1.05, bodyLeanZ:-0.18, lungeZ:0.10 },
+        // Hit 3 — fast spinning kick: quick whip-through, body rotation carries the strike
+        { fwd:0.26, ang:0.48, shoulderZ: 0.16, elbowStart:0.10, bodyLeanZ: 0.30, lungeZ:0.05, spinY:1.65 },
+        // Hit 4 — high-speed Projection strike: near-instant windup, sharp full-extension
+        // thrust, and the biggest lunge in the string — Naoya hitting max speed right
+        // before Projection triggers (afterimage burst on this hit is unchanged).
+        { fwd:0.12, ang:1.05, shoulderZ: 0.00, elbowStart:0.06, bodyLeanZ: 0.00, lungeZ:0.40 }
     ]
 };
  
@@ -3155,11 +3404,17 @@ function executeAttackPipeline() {
     if(targetEntry){
         const dir=new THREE.Vector3().subVectors(targetEntry.mesh.position,pMesh.position).normalize();
         applyDamageToEnemy(wep,dir,combatFX.m1Step,targetEntry);
- 
+
         // ── Naoya Projection passive + speed-trail VFX — additive, no-ops for every other character ──
         if (currentCharacterId === 'NAOYA') {
-            NaoyaProjectionSystem.onNaoyaHit(targetEntry, combatFX.m1Step);
+            const projectionThreshold = AwakeningController.isActive() ? 3 : 4;   // Vengeance of Zenin: 3-hit trigger
+            NaoyaProjectionSystem.onNaoyaHit(targetEntry, combatFX.m1Step, projectionThreshold);
             NaoyaVFX.onM1Hit(combatFX.m1Step);
+            if (AwakeningController.isActive()) {
+                // More afterimages per hit while awakened — reuses the existing clone system, unmodified
+                setTimeout(() => NaoyaVFX._spawnAfterimage(), 25);
+                setTimeout(() => NaoyaVFX._spawnAfterimage(), 55);
+            }
         }
     }
  
@@ -3232,7 +3487,7 @@ function applyDamageToEnemy(wep,dir,step,targetEntry) {
     }
  
     state.hp=Math.max(0,state.hp-dmg);
- 
+
     // ── Nanami Ratio Mark: every hit adds stacks; 7 marks the enemy ──
     if(currentCharacterId==='NANAMI' && state.hp>0){
         const wasMarked = state.ratioMarked;
@@ -3246,7 +3501,7 @@ function applyDamageToEnemy(wep,dir,step,targetEntry) {
             spawnMarkHitFX(mesh.position.clone());
         }
     }
- 
+
     // Lifesteal perks: heal the player for a fraction of damage actually dealt
     if (P.lifestealPct > 0) {
         GAME_STATE.player.hp = Math.min(GAME_STATE.player.maxHp, GAME_STATE.player.hp + dmg*P.lifestealPct);
@@ -3301,14 +3556,14 @@ function applyDamageToEnemy(wep,dir,step,targetEntry) {
 function spawnBlackFlashVFX(pos) {
     if (!scene) return;
     const t0 = performance.now(), dur = 680;
- 
+
     // Black impact sphere — expands rapidly from hit point
     const sGeo = new THREE.SphereGeometry(0.55, 8, 8);
     const sMat = new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:1.0 });
     const sphere = new THREE.Mesh(sGeo, sMat);
     sphere.position.copy(pos).add(new THREE.Vector3(0, 1.4, 0));
     scene.add(sphere);
- 
+
     // Red lightning bolts radiating outward from impact
     const boltCount = 8;
     const bGeo = new THREE.BoxGeometry(0.065, 1.9, 0.065);
@@ -3324,7 +3579,7 @@ function spawnBlackFlashVFX(pos) {
         scene.add(bolt);
         boltData.push({ mesh:bolt, mat:bMat, cos:Math.cos(angle), sin:Math.sin(angle) });
     }
- 
+
     // Black shockwave ring (flat torus expanding outward)
     const rGeo = new THREE.TorusGeometry(0.55, 0.10, 6, 22);
     const rMat = new THREE.MeshBasicMaterial({ color:0x0a0a0a, transparent:true, opacity:0.90 });
@@ -3332,21 +3587,21 @@ function spawnBlackFlashVFX(pos) {
     ring.rotation.x = Math.PI / 2;
     ring.position.copy(pos).add(new THREE.Vector3(0, 0.12, 0));
     scene.add(ring);
- 
+
     // Brief black DOM overlay — the clearest possible Black Flash signal
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:#000;pointer-events:none;z-index:9999;opacity:0.82;transition:opacity 0.14s';
     document.body.appendChild(overlay);
     setTimeout(() => { overlay.style.opacity='0'; setTimeout(()=>overlay.remove(), 160); }, 85);
- 
+
     (function tick() {
         const t = Math.min(1, (performance.now()-t0)/dur);
         const e = 1 - Math.pow(1-t, 2);  // ease-out
- 
+
         // Sphere: rapid expansion + fade after initial burst
         sphere.scale.setScalar(1 + e*6.5);
         sMat.opacity = t < 0.22 ? 1.0 : Math.max(0, 1.0 - ((t-0.22)/0.78)*1.5);
- 
+
         // Bolts: spread outward + fade
         boltData.forEach(b => {
             const spread = 1.0 + e*3.0;
@@ -3354,12 +3609,12 @@ function spawnBlackFlashVFX(pos) {
             b.mesh.position.z = pos.z + b.sin * spread;
             b.mat.opacity = Math.max(0, 0.95 - t*1.7);
         });
- 
+
         // Ring: expand + fade
         const rs = 1 + e*12;
         ring.scale.set(rs, rs, 1);
         rMat.opacity = Math.max(0, 0.90 - t*1.4);
- 
+
         if (t < 1) {
             requestAnimationFrame(tick);
         } else {
@@ -3370,7 +3625,7 @@ function spawnBlackFlashVFX(pos) {
         }
     })();
 }
- 
+
 // ── MARK HIT VFX — blue burst when hitting an already-marked enemy ──
 function spawnMarkHitFX(pos) {
     if (!scene) return;
@@ -3396,8 +3651,8 @@ function spawnMarkHitFX(pos) {
         else { scene.remove(ring); rGeo.dispose(); rMat.dispose(); }
     })();
 }
- 
- 
+
+
 // ════════════════════════════════════════════════════════
 // NAOYA PROJECTION SYSTEM — additive, self-contained.
 // Every 4th consecutive M1 hit traps the target inside a thin,
@@ -3409,11 +3664,502 @@ function spawnMarkHitFX(pos) {
 // (neutral projectionTrapped/projectionEndTime fields).
 // Touches NOTHING belonging to Toji or Nanami.
 // ════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════
+// NAOYA SECRET AWAKENING — "Vengeance of Zenin: Cursed Rebirth"
+// Fully additive, character-locked (NAOYA only), death-triggered.
+// Does not touch Toji/Nanami, normal combat, M1, S1-S4, or the normal
+// Awakening system's own state — it only reads TOJI_AWAKENING_STATE.meter
+// (to check/consume it) the same way normal Awakening already does.
+//
+// NOTE ON SCOPE: this implements the full trigger → transform → Domain →
+// return flow end-to-end. Two pieces from the manga-accurate spec are
+// intentionally simplified as placeholders rather than risked half-built:
+//   - Cursed Naoya's model is a recolor + new semi-transparent energy-plate
+//     overlay (new geometry, not a flat recolor), NOT a bespoke sculpted
+//     asset — swap _applyCursedVisual()'s body for a real model later.
+//   - The Domain's "film strips wrapping enemies" and the literal
+//     "human torso emerging from the cursed chest" effect are not built;
+//     Projection Lock (reusing NaoyaProjectionSystem.trap() exactly as-is)
+//     stands in for the sure-hit capture, and the transformation reveal
+//     happens via the glitch/black-screen swaps instead of a modeled
+//     emergence animation. The low-poly box rig also has no per-finger
+//     geometry, so the Gigeiten Mudra is approximated as both arms raised
+//     to chest height, elbows bent, hands converging — not raised overhead,
+//     per the spec's explicit requirement.
+// ════════════════════════════════════════════════════════
+const SECRET_AWAKENING_STATE = {
+    phase: 'idle',              // 'idle' | 'transform' | 'domain'
+    used: false,                // once per run
+    phaseStart: 0,
+    beatsDone: {},
+    cursedActive: false,
+    cursedGroup: null,
+    emergenceGroup: null,
+    emergenceMat: null,
+    emergenceHands: null,
+    domainGroup: null,
+    domainEye: null,
+    origBackground: undefined,
+    origFog: undefined,
+    lastLockTick: 0,
+    domainGraceUntil: 0,   // brief invulnerability the instant Domain gameplay resumes
+    domainRevealUntil: 0   // control/camera stay locked until the Domain has actually been shown
+};
+
+const SecretAwakeningController = {
+    canTrigger() {
+        return currentCharacterId === 'NAOYA' &&
+               !SECRET_AWAKENING_STATE.used &&
+               TOJI_AWAKENING_STATE.meter >= 100 &&
+               TOJI_AWAKENING_STATE.phase !== 'cutscene';
+    },
+
+    // Called from applyDamageToPlayer instead of the normal defeat path
+    trigger() {
+        const s = SECRET_AWAKENING_STATE;
+        s.used = true;
+        s.phase = 'transform';
+        s.phaseStart = performance.now();
+        s.beatsDone = {};
+        // BUGFIX: restoring to 1 HP meant the instant Domain gameplay resumed and
+        // enemy freeze lifted, a single graze killed Naoya again — which looked
+        // indistinguishable from "the sequence never finished." Restore a real
+        // cushion instead.
+        GAME_STATE.player.hp = Math.max(1, Math.round(GAME_STATE.player.maxHp * 0.5));
+        TOJI_AWAKENING_STATE.meter = 0;    // consume the meter, same as normal Awakening
+        this._hideHUD();
+        updateHUD();
+        console.log('[Secret Awakening] Triggered — Vengeance of Zenin: Cursed Rebirth');
+    },
+
+    isTransforming() { return SECRET_AWAKENING_STATE.phase === 'transform'; },
+    isDomainActive() { return SECRET_AWAKENING_STATE.phase === 'domain'; },
+    // THE FIX: entering 'domain' phase is not by itself "cinematic over" — the
+    // black screen still needs to clear and the Domain needs a beat on screen
+    // before control returns. This was previously missing entirely, which is
+    // why gameplay resumed the instant _startDomain() fired.
+    isLocking() {
+        const s = SECRET_AWAKENING_STATE;
+        return s.phase === 'transform' || (s.phase === 'domain' && performance.now() < s.domainRevealUntil);
+    },
+    inputLocked() { return this.isLocking(); },
+
+    // Ticked every frame from runGameLoop — drives every beat of the sequence
+    update(now) {
+        const s = SECRET_AWAKENING_STATE;
+        if (s.cursedActive && s.cursedGroup && pMesh) {
+            s.cursedGroup.position.copy(pMesh.position);
+            s.cursedGroup.rotation.y = pMesh.rotation.y;
+        }
+        if (s.phase === 'idle') return;
+        const el = now - s.phaseStart;
+
+        if (s.phase === 'transform') {
+            // Beat 1 (0-900ms): held death pose — HUD hidden, world frozen via
+            // isTransforming() guards in processEnemyAI/processPlayerLocomotion/updateWalkAnimation
+            // Beat 2 (900-1900ms): blue glitch — cursed-model swap happens hidden inside it
+            if (el >= 900 && !s.beatsDone.glitch) {
+                s.beatsDone.glitch = true;
+                this._safeCall('glitch', () => this._spawnGlitchOverlay(1000));
+            }
+            if (el >= 1400 && !s.beatsDone.cursedSwap) {
+                s.beatsDone.cursedSwap = true;
+                this._safeCall('cursedSwap', () => this._applyCursedVisual());
+            }
+            // Beat 3 (1900-2400ms): slow energy leak as the cursed form settles
+            if (el >= 1900 && !s.beatsDone.riseFx) {
+                s.beatsDone.riseFx = true;
+                this._safeCall('riseFx', () => this._spawnEnergyLeak());
+            }
+            // Beat 3.5 (2400-2900ms): Human Naoya's upper body emerges from the cursed chest
+            if (el >= 2400 && !s.beatsDone.emergence) {
+                s.beatsDone.emergence = true;
+                this._safeCall('emergence', () => this._spawnHumanEmergence());
+            }
+            // Beat 4 (2900-3550ms): Gigeiten Mudra hand-sign pose, held at chest height
+            if (el >= 2900 && el < 3550) {
+                this._safeCall('handSign', () => this._applyHandSignPose(Math.min(1, (el - 2900) / 400)));
+            }
+            // Beat 5 (~3550ms): Domain activation impact — instant, no fade-in first
+            if (el >= 3550 && !s.beatsDone.impact) {
+                s.beatsDone.impact = true;
+                this._safeCall('impact', () => this._spawnDomainImpact());
+            }
+            // Beat 6: black screen erupts immediately with the impact, Domain built while hidden
+            if (el >= 3560 && !s.beatsDone.blackScreen) {
+                s.beatsDone.blackScreen = true;
+                this._safeCall('blackScreen', () => this._showBlackScreen());
+            }
+            if (el >= 3900 && !s.beatsDone.domainBuilt) {
+                s.beatsDone.domainBuilt = true;
+                this._safeCall('domainBuilt', () => this._buildDomainEnvironment());
+            }
+            if (el >= 4300) {
+                this._safeCall('startDomain', () => this._startDomain(now));
+            }
+            // Hard ceiling — if anything above ever failed to advance the phase
+            // (an unforeseen exception, a beat flag that never got set, etc.),
+            // force the sequence into Domain rather than hanging forever. The
+            // normal path always resolves well before this fires.
+            if (el >= 8000 && s.phase === 'transform') {
+                console.warn('[Secret Awakening] Transform phase exceeded safety ceiling — forcing Domain start.');
+                this._safeCall('forceStartDomain', () => this._startDomain(now));
+            }
+            return;
+        }
+
+        if (s.phase === 'domain') {
+            this._safeCall('domainLockTick', () => this._domainLockTick(now));
+            if (s.domainEye) {
+                s.domainEye.scale.y = (Math.sin(now * 0.0009) > 0.965) ? 0.06 : 1;   // slow blink
+            }
+            if (el >= 10000) this._safeCall('endDomain', () => this._endDomain(now));
+        }
+    },
+
+    // Runs a beat callback in isolation — an exception here is logged and
+    // skipped rather than propagating up and aborting the rest of this frame's
+    // camera/HUD/enemy updates in runGameLoop's shared try/catch.
+    _safeCall(label, fn) {
+        try { fn(); }
+        catch (e) { console.error('[Secret Awakening] beat "'+label+'" failed:', e); }
+    },
+
+    // ── Camera (called from processCameraPhysics, same pattern as AwakeningController.overrideCamera) ──
+    overrideCamera(delta) {
+        const s = SECRET_AWAKENING_STATE;
+        if (!pMesh) return false;
+
+        if (s.phase === 'transform') {
+            const el = performance.now() - s.phaseStart;
+            const fwd = new THREE.Vector3(Math.sin(GAME_STATE.player.rotation), 0, Math.cos(GAME_STATE.player.rotation));
+            let back = 4.0, height = 2.4, lookHeight = 1.8;
+            if (el < 900)       { back = 4.0; height = 2.4; }
+            else if (el < 1900) { back = 3.0; height = 2.2; }
+            else if (el < 2900) { back = 2.4; height = 2.3; }
+            else if (el < 3550) { back = 1.7; height = 2.0; lookHeight = 2.1; }   // hand-sign close-up
+            else                { back = 2.2; height = 2.2; }
+            const camPos = pMesh.position.clone().sub(fwd.clone().multiplyScalar(back)).add(new THREE.Vector3(0, height, 0));
+            camera.position.lerp(camPos, 6 * delta);
+            camera.lookAt(pMesh.position.clone().add(new THREE.Vector3(0, lookHeight, 0)));
+            return true;
+        }
+
+        // THE FIX: this branch was missing entirely — overrideCamera returned false
+        // as soon as phase left 'transform', so the camera snapped straight back to
+        // normal third-person follow before the black screen even cleared. Hold a
+        // reveal shot (pulled up/back, framing toward the Domain's giant eye) until
+        // domainRevealUntil, THEN hand back to the normal gameplay camera.
+        if (s.phase === 'domain' && performance.now() < s.domainRevealUntil) {
+            const eyePos = s.domainEye ? s.domainEye.position : pMesh.position.clone().add(new THREE.Vector3(0, 4, -20));
+            const camPos = pMesh.position.clone().add(new THREE.Vector3(0, 5.5, 6));
+            camera.position.lerp(camPos, 5 * delta);
+            const lookPoint = pMesh.position.clone().lerp(eyePos, 0.35).add(new THREE.Vector3(0, 2, 0));
+            camera.lookAt(lookPoint);
+            return true;
+        }
+
+        return false;
+    },
+
+    // ── Domain gameplay: every 2s, Projection Lock any untrapped living enemy ──
+    // Reuses NaoyaProjectionSystem.trap() exactly as-is — no changes to that system.
+    _domainLockTick(now) {
+        const s = SECRET_AWAKENING_STATE;
+        if (now - s.lastLockTick < 2000) return;
+        s.lastLockTick = now;
+        GAME_STATE.enemies.forEach(entry => {
+            if (entry.state.hp > 0 && !entry.state.projectionTrapped) {
+                NaoyaProjectionSystem.trap(entry);
+            }
+        });
+    },
+
+    _startDomain(now) {
+        const s = SECRET_AWAKENING_STATE;
+        if (s.phase === 'domain') return;   // idempotency guard — never re-run this
+        s.phase = 'domain';
+        s.phaseStart = now;
+        s.domainRevealUntil = now + 900;    // camera/input stay locked through this reveal beat
+        s.lastLockTick = now - 2000;        // BUGFIX: was 'now', which delayed the first Projection
+                                             // Lock wave by 2s — enemies should trap the instant the
+                                             // Domain appears, not 2s after
+        s.domainGraceUntil = now + 2500;   // brief invulnerability as gameplay resumes
+        this._hideBlackScreen();
+        this._showHUD();
+        if (scene) {
+            s.origBackground = scene.background;
+            s.origFog = scene.fog;
+            scene.background = new THREE.Color(0x000003);
+            scene.fog = new THREE.FogExp2(0x000003, 0.02);
+        }
+    },
+
+    _endDomain(now) {
+        const s = SECRET_AWAKENING_STATE;
+        if (s.phase !== 'domain') return;   // idempotency guard
+        GAME_STATE.enemies.forEach(entry => {
+            if (entry.state.projectionTrapped) NaoyaProjectionSystem.release(entry, true);
+        });
+        if (s.domainGroup && scene) scene.remove(s.domainGroup);
+        s.domainGroup = null; s.domainEye = null;
+        if (scene) {
+            if (s.origBackground !== undefined) scene.background = s.origBackground;
+            if (s.origFog !== undefined) scene.fog = s.origFog;
+        }
+        s.phase = 'idle';
+    },
+
+    // ── Cursed Form — a GENUINE swap: the human rig is hidden (pMesh.visible=false)
+    // and a separate, distinctly-shaped silhouette group takes over rendering. This
+    // is the framework for a real sculpted Cursed Naoya asset — swap the geometry
+    // built in _buildCursedSilhouette() for the real model later without touching
+    // anything else in this controller. Applied once, stays for the rest of the run.
+    _applyCursedVisual() {
+        const s = SECRET_AWAKENING_STATE;
+        if (s.cursedActive || !pMesh || !scene) return;
+        s.cursedActive = true;
+        pMesh.visible = false;   // hide the human rig entirely — not a recolor, an actual swap
+        const group = this._buildCursedSilhouette();
+        group.position.copy(pMesh.position);
+        group.rotation.y = pMesh.rotation.y;
+        scene.add(group);
+        s.cursedGroup = group;
+    },
+
+    // New geometry distinct from the human box-rig's silhouette — a tall hooded/diamond
+    // shape approximating the reference art (pointed hood, wide shoulder mass, narrow
+    // waist, flared lower body, small glowing eyes, dark open front).
+    _buildCursedSilhouette() {
+        const g = new THREE.Group();
+        const shellMat = new THREE.MeshStandardMaterial({ color: 0x5a1f5e, emissive: 0x2a6fd6, emissiveIntensity: 0.4, roughness: 0.55, metalness: 0.15 });
+        const voidMat  = new THREE.MeshStandardMaterial({ color: 0x0a0612, roughness: 0.85 });
+        const eyeMat   = new THREE.MeshStandardMaterial({ color: 0xcfeeff, emissive: 0x6fc7ff, emissiveIntensity: 1.6 });
+
+        const hoodTip  = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.9, 6), shellMat);
+        hoodTip.position.set(0, 3.05, 0);
+        const shoulders = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.55, 1.1, 8), shellMat);
+        shoulders.position.set(0, 2.15, 0);
+        const waist = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.55, 0.7, 8), shellMat);
+        waist.position.set(0, 1.4, 0);
+        const lowerFlare = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.05, 1.1, 8), shellMat);
+        lowerFlare.position.set(0, 0.6, 0);
+        const innerVoid = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.05, 2.0, 6), voidMat);
+        innerVoid.position.set(0, 1.4, 0.35);
+        g.add(hoodTip, shoulders, waist, lowerFlare, innerVoid);
+
+        [-0.1, 0.1].forEach(x => {
+            const eye = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.06), eyeMat);
+            eye.position.set(x, 2.35, 0.42);
+            g.add(eye);
+        });
+        return g;
+    },
+
+    // ── Human Emergence (Phase 4) — Human Naoya's upper body rises from the cursed
+    // chest. Approximated as a translucent, glowing bust that grows out of the
+    // silhouette's chest rather than a literal masked-mesh emergence (the box rig
+    // has no support for that kind of vertex masking) — it fades/scales in and then
+    // stays, riding on the cursed silhouette as "one being" for the rest of the beat.
+    _spawnHumanEmergence() {
+        const s = SECRET_AWAKENING_STATE;
+        if (!s.cursedGroup || s.emergenceGroup) return;
+        const busMat = new THREE.MeshStandardMaterial({
+            color: 0xe8c49a, emissive: 0x4fa8ff, emissiveIntensity: 0.5,
+            transparent: true, opacity: 0.0, roughness: 0.5
+        });
+        const bust = new THREE.Group();
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.4, 0.34), busMat);
+        head.position.set(0, 0.55, 0.1);
+        const chest = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.55, 0.36), busMat);
+        chest.position.set(0, 0.05, 0.05);
+        bust.add(head, chest);
+        bust.position.set(0, 2.05, 0.25);
+        bust.scale.set(0.2, 0.2, 0.2);
+        s.cursedGroup.add(bust);
+        s.emergenceGroup = bust;
+        s.emergenceMat = busMat;
+
+        const hMat = new THREE.MeshStandardMaterial({ color: 0x6fc7ff, emissive: 0x6fc7ff, emissiveIntensity: 1.4, transparent: true, opacity: 0 });
+        const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), hMat);
+        const lHand = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), hMat.clone());
+        rHand.position.set(0.35, -0.15, 0.3);
+        lHand.position.set(-0.35, -0.15, 0.3);
+        bust.add(rHand, lHand);
+        s.emergenceHands = { r: rHand, l: lHand, rMat: hMat, lMat: rHand === lHand ? hMat : lHand.material };
+
+        const t0 = performance.now(), dur = 550;
+        (function grow() {
+            const t = Math.min(1, (performance.now() - t0) / dur);
+            const e = 1 - Math.pow(1 - t, 2);
+            bust.scale.set(0.2 + 0.8 * e, 0.2 + 0.8 * e, 0.2 + 0.8 * e);
+            busMat.opacity = 0.92 * e;
+            if (t < 1) requestAnimationFrame(grow);
+        })();
+    },
+
+    // ── Gigeiten Mudra approximation, performed by the emerging human bust's hand
+    // markers (the cursed silhouette has no articulated arms to pose). Box rig has
+    // no per-finger geometry, so this is the closest achievable readable gesture:
+    // both hands rise to chest height and converge to a single point.
+    _applyHandSignPose(t) {
+        const s = SECRET_AWAKENING_STATE;
+        const rig = GAME_STATE.player.rig;
+        if (rig) {
+            rig.rS.rotation.x = -1.3 * t; rig.rS.rotation.z = -0.5 * t;
+            rig.lS.rotation.x = -1.3 * t; rig.lS.rotation.z =  0.5 * t;
+            rig.rE.rotation.x = 1.55 * t;
+            rig.lE.rotation.x = 1.55 * t;
+        }
+        if (s.emergenceHands) {
+            const { r, l, rMat, lMat } = s.emergenceHands;
+            r.position.set(0.35 - 0.35 * t, -0.15 + 0.1 * t, 0.3 + 0.15 * t);
+            l.position.set(-0.35 + 0.35 * t, -0.15 + 0.1 * t, 0.3 + 0.15 * t);
+            rMat.opacity = t; lMat.opacity = t;
+        }
+    },
+
+    _spawnEnergyLeak() {
+        if (!pMesh || !scene) return;
+        for (let i = 0; i < 10; i++) {
+            setTimeout(() => {
+                const m = new THREE.Mesh(
+                    new THREE.PlaneGeometry(0.08, 0.3),
+                    new THREE.MeshBasicMaterial({ color: 0x6fc7ff, transparent: true, opacity: 0.8 })
+                );
+                m.position.copy(pMesh.position).add(new THREE.Vector3((Math.random()-0.5)*0.8, 0.3+Math.random()*1.6, (Math.random()-0.5)*0.6));
+                scene.add(m);
+                const t0 = performance.now(), dur = 900;
+                (function tick() {
+                    const t = Math.min(1, (performance.now() - t0) / dur);
+                    m.position.y += 0.012;
+                    m.material.opacity = 0.8 * (1 - t);
+                    if (t < 1) requestAnimationFrame(tick);
+                    else { scene.remove(m); m.geometry.dispose(); m.material.dispose(); }
+                })();
+            }, i * 90);
+        }
+    },
+
+    _spawnDomainImpact() {
+        if (!pMesh || !scene) return;
+        const rGeo = new THREE.TorusGeometry(0.8, 0.12, 6, 28);
+        const rMat = new THREE.MeshBasicMaterial({ color: 0x0a1a3a, transparent: true, opacity: 0.95 });
+        const ring = new THREE.Mesh(rGeo, rMat);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.copy(pMesh.position); ring.position.y = 0.2;
+        scene.add(ring);
+        const t0 = performance.now(), dur = 650;
+        (function tick() {
+            const t = Math.min(1, (performance.now() - t0) / dur);
+            const e = 1 - Math.pow(1 - t, 2);
+            ring.scale.set(1 + e * 45, 1 + e * 45, 1);
+            rMat.opacity = Math.max(0, 0.95 - t * 1.1);
+            if (t < 1) requestAnimationFrame(tick);
+            else { scene.remove(ring); rGeo.dispose(); rMat.dispose(); }
+        })();
+        combatFX.shakeIntensity = Math.max(combatFX.shakeIntensity, 0.5);
+        const fl = document.createElement('div');
+        fl.style.cssText = 'position:fixed;inset:0;background:#dff0ff;opacity:0.9;pointer-events:none;z-index:9999;transition:opacity 0.5s';
+        document.body.appendChild(fl);
+        requestAnimationFrame(() => { fl.style.opacity = '0'; setTimeout(() => fl.remove(), 550); });
+    },
+
+    _spawnGlitchOverlay(durationMs) {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9997;overflow:hidden;';
+        document.body.appendChild(wrap);
+        const layers = [];
+        for (let i = 0; i < 6; i++) {
+            const bar = document.createElement('div');
+            bar.style.cssText = 'position:absolute;left:0;right:0;background:rgba(80,180,255,0.22);mix-blend-mode:screen;';
+            wrap.appendChild(bar);
+            layers.push(bar);
+        }
+        const t0 = performance.now();
+        const iv = setInterval(() => {
+            const el = performance.now() - t0;
+            if (el >= durationMs) { clearInterval(iv); wrap.remove(); return; }
+            layers.forEach(bar => {
+                bar.style.top = (Math.random() * window.innerHeight) + 'px';
+                bar.style.height = (4 + Math.random() * 40) + 'px';
+                bar.style.transform = `translateX(${(Math.random()-0.5)*60}px)`;
+                bar.style.opacity = (0.15 + Math.random() * 0.35).toFixed(2);
+            });
+        }, 45);
+    },
+
+    _buildDomainEnvironment() {
+        if (!scene) return;
+        const g = new THREE.Group();
+        const dome = new THREE.Mesh(
+            new THREE.SphereGeometry(45, 24, 16),
+            new THREE.MeshBasicMaterial({ color: 0x000005, side: THREE.BackSide })
+        );
+        g.add(dome);
+        // Corridor floor — living-flesh placeholder (organic-toned, faint blue emissive pulse)
+        const floor = new THREE.Mesh(
+            new THREE.PlaneGeometry(14, 60),
+            new THREE.MeshStandardMaterial({ color: 0x3a1220, emissive: 0x1a3a6b, emissiveIntensity: 0.25, roughness: 0.85 })
+        );
+        floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0.02, -10);
+        g.add(floor);
+        // Giant eye at the corridor's end
+        const eyeGroup = new THREE.Group();
+        const iris = new THREE.Mesh(
+            new THREE.SphereGeometry(1.6, 16, 16),
+            new THREE.MeshStandardMaterial({ color: 0x1c5fd6, emissive: 0x2a6fd6, emissiveIntensity: 0.9 })
+        );
+        iris.position.z = 3.6;
+        eyeGroup.add(
+            new THREE.Mesh(new THREE.SphereGeometry(4, 16, 16), new THREE.MeshStandardMaterial({ color: 0xe8e4e0, emissive: 0x4fa8ff, emissiveIntensity: 0.15 })),
+            iris
+        );
+        eyeGroup.position.set(0, 8, -38);
+        g.add(eyeGroup);
+        const light = new THREE.PointLight(0x4fa8ff, 1.2, 60);
+        light.position.set(0, 6, -15);
+        g.add(light);
+        scene.add(g);
+        SECRET_AWAKENING_STATE.domainGroup = g;
+        SECRET_AWAKENING_STATE.domainEye = eyeGroup;
+    },
+
+    _showBlackScreen() {
+        const el = document.createElement('div');
+        el.id = 'secret-awakening-blackscreen';
+        el.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:9999;transition:opacity 0.15s;';
+        document.body.appendChild(el);
+        requestAnimationFrame(() => { el.style.opacity = '1'; });
+    },
+    _hideBlackScreen() {
+        const el = document.getElementById('secret-awakening-blackscreen');
+        if (el) { el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }
+    },
+
+    _hideHUD() {
+        ['ui-layer', 'dash-indicator', 'awakening-bar-wrap', 'ability-bar'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.style.display = 'none';
+        });
+    },
+    _showHUD() {
+        ['ui-layer', 'dash-indicator', 'awakening-bar-wrap', 'ability-bar'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.style.display = '';
+        });
+    }
+};
+
 const NAOYA_PROJECTION_DURATION_MS = 5000;
- 
+// ── Naoya Bleed (Zenin Edge, S3) ──
+const NAOYA_BLEED_TICK_MS = 700;
+const NAOYA_BLEED_DMG_PER_STACK = 3;
+const NAOYA_BLEED_MAX_STACKS = 5;
+const NAOYA_BLEED_DURATION_MS = 4000;
+
 const NaoyaProjectionSystem = {
     _frames: new Map(),   // entry.state -> { group, glass }
- 
+
     // Called only when the 4th consecutive M1 hit lands (see executeAttackPipeline)
     trap(entry) {
         if (!entry || !entry.state || entry.state.hp <= 0) return;
@@ -3422,17 +4168,18 @@ const NaoyaProjectionSystem = {
         entry.state.projectionEndTime = performance.now() + NAOYA_PROJECTION_DURATION_MS;
         this._spawnFrame(entry);
     },
- 
-    // Called any time Naoya lands a hit — breaks the frame if the target was trapped
-    onNaoyaHit(entry, step) {
+
+    // Called any time Naoya lands a hit — breaks the frame if the target was trapped.
+    // `threshold` defaults to 4 (unchanged behavior); Awakening passes 3.
+    onNaoyaHit(entry, step, threshold) {
         if (!entry || !entry.state || entry.state.hp <= 0) return;
         if (entry.state.projectionTrapped) {
             this.release(entry, true);   // Naoya attacking a trapped enemy shatters it immediately
             return;
         }
-        if (step === 4) this.trap(entry);
+        if (step === (threshold || 4)) this.trap(entry);
     },
- 
+
     release(entry, shatter) {
         if (!entry || !entry.state) return;
         if (!entry.state.projectionTrapped) return;
@@ -3440,7 +4187,7 @@ const NaoyaProjectionSystem = {
         entry.state.projectionEndTime = 0;
         this._removeFrame(entry, shatter !== false);
     },
- 
+
     // Ticked every frame from runGameLoop — advances timers, keeps frames glued
     // to their enemy, and releases on expiry. Cheap no-op when nothing is trapped.
     update(now) {
@@ -3462,7 +4209,7 @@ const NaoyaProjectionSystem = {
             }
         });
     },
- 
+
     // ── Thin rectangular mirror-frame — explicitly NOT a cube/cage ──
     _spawnFrame(entry) {
         if (!scene || !entry.mesh) return;
@@ -3475,10 +4222,10 @@ const NaoyaProjectionSystem = {
             transparent: true, opacity: 0.14, emissive: 0x2f7fcf, emissiveIntensity: 0.25,
             side: THREE.DoubleSide, depthWrite: false
         });
- 
+
         const W = 1.7, H = 3.0, T = 0.07, D = 0.05, cy = H / 2 + 0.05;
         const g = new THREE.Group();
- 
+
         const top    = new THREE.Mesh(new THREE.BoxGeometry(W, T, D), frameMat);
         top.position.set(0, cy + H/2 - T/2, 0);
         const bottom = new THREE.Mesh(new THREE.BoxGeometry(W, T, D), frameMat);
@@ -3488,19 +4235,19 @@ const NaoyaProjectionSystem = {
         const right  = new THREE.Mesh(new THREE.BoxGeometry(T, H, D), frameMat);
         right.position.set(W/2 - T/2, cy, 0);
         g.add(top, bottom, left, right);
- 
+
         // Thin "glass" pane — the mirror/reflection-like surface the enemy is frozen behind
         const glass = new THREE.Mesh(new THREE.PlaneGeometry(W - T*1.5, H - T*1.5), glassMat);
         glass.position.set(0, cy, 0.02);
         g.add(glass);
- 
+
         g.position.copy(entry.mesh.position);
         g.rotation.y = entry.mesh.rotation.y;
         scene.add(g);
- 
+
         this._frames.set(entry.state, { group: g, entry, frameMat, glassMat });
     },
- 
+
     _removeFrame(entry, shatter) {
         const frameData = this._frames.get(entry.state);
         if (!frameData) return;
@@ -3511,7 +4258,7 @@ const NaoyaProjectionSystem = {
         group.children.forEach(m => m.geometry && m.geometry.dispose());
         frameMat.dispose(); glassMat.dispose();
     },
- 
+
     // Glass-shard burst — plays on both timer expiry and attack-break
     _shatterEffect(pos) {
         if (!scene) return;
@@ -3519,7 +4266,7 @@ const NaoyaProjectionSystem = {
         const group = new THREE.Group();
         group.position.copy(pos).add(new THREE.Vector3(0, 1.5, 0));
         scene.add(group);
- 
+
         const shards = [];
         const shardMat = new THREE.MeshStandardMaterial({
             color: 0xcfeeff, emissive: 0x6fc7ff, emissiveIntensity: 1.4,
@@ -3535,13 +4282,13 @@ const NaoyaProjectionSystem = {
             group.add(m);
             shards.push(m);
         }
- 
+
         // Brief light-blue DOM flash — mirrors the existing spawnMarkHitFX convention
         const fl = document.createElement('div');
         fl.style.cssText = 'position:fixed;inset:0;background:rgba(120,200,255,0.14);pointer-events:none;z-index:9998;transition:opacity 0.24s';
         document.body.appendChild(fl);
         requestAnimationFrame(() => { fl.style.opacity = '0'; setTimeout(() => fl.remove(), 260); });
- 
+
         (function tick() {
             const t = Math.min(1, (performance.now() - t0) / dur);
             shards.forEach(m => {
@@ -3560,7 +4307,7 @@ const NaoyaProjectionSystem = {
         })();
     }
 };
- 
+
 // ════════════════════════════════════════════════════════
 // NAOYA VFX — light-blue afterimages / speed trails.
 // Purely additive: every entry point checks currentCharacterId
@@ -3569,26 +4316,30 @@ const NaoyaProjectionSystem = {
 const NaoyaVFX = {
     _lastTrailSpawn: 0,
     TRAIL_INTERVAL_MS: 55,
- 
-    // Ticked every frame from runGameLoop — spawns a trail afterimage while dashing
+
+    // Ticked every frame from runGameLoop — spawns a trail afterimage while dashing,
+    // or continuously while moving during Naoya's awakening (Vengeance of Zenin)
     update(now) {
         if (currentCharacterId !== 'NAOYA' || !pMesh) return;
-        if (GAME_STATE.player.isDashing && now - this._lastTrailSpawn > this.TRAIL_INTERVAL_MS) {
+        const awakenedMoving = AwakeningController.isActive() &&
+            (GAME_STATE.input.forward || GAME_STATE.input.backward || GAME_STATE.input.left || GAME_STATE.input.right);
+        if ((GAME_STATE.player.isDashing || awakenedMoving) && now - this._lastTrailSpawn > this.TRAIL_INTERVAL_MS) {
             this._lastTrailSpawn = now;
             this._spawnAfterimage();
         }
     },
- 
+
     // Called from executeAttackPipeline right after a Naoya M1 hit lands
     onM1Hit(step) {
         if (currentCharacterId !== 'NAOYA') return;
         this._spawnAfterimage();
         if (step === 4) setTimeout(() => this._spawnAfterimage(), 40);   // extra flourish on the Projection strike
     },
- 
+
     _spawnAfterimage() {
         if (!scene || !pMesh) return;
         const clone = pMesh.clone(true);
+        clone.visible = true;   // pMesh may be hidden post-Cursed-Form; the afterimage clone must stay visible
         const mats = [];
         clone.traverse(obj => {
             if (obj.isMesh) {
@@ -3611,11 +4362,13 @@ const NaoyaVFX = {
         })();
     }
 };
- 
+
 function applyDamageToPlayer(dmgOverride, attackerEntry) {
     if(GAME_STATE.player.hp<=0||GAME_STATE.player.isDashing) return;
     // Hyperarmor: invulnerable during awakening animation
     if(AwakeningController.inputLocked()) return;
+    // Secret Awakening: brief invulnerability the instant Domain gameplay resumes
+    if(performance.now() < SECRET_AWAKENING_STATE.domainGraceUntil) return;
     const baseDmg = (dmgOverride !== undefined) ? dmgOverride : GAME_STATE.enemy.damage;
     const incomingDmg=Math.round(baseDmg*AwakeningController.getDamageReceiveMul()*GAME_STATE.player.damageTakenMul);
     GAME_STATE.player.hp=Math.max(0,GAME_STATE.player.hp-incomingDmg);
@@ -3628,7 +4381,10 @@ function applyDamageToPlayer(dmgOverride, attackerEntry) {
     }
  
     updateHUD();
-    if(GAME_STATE.player.hp<=0) triggerEnd('DEFEAT');
+    if(GAME_STATE.player.hp<=0){
+        if(SecretAwakeningController.canTrigger()) SecretAwakeningController.trigger();
+        else triggerEnd('DEFEAT');
+    }
 }
  
 function updateHUD() {
@@ -3707,6 +4463,7 @@ function runGameLoop(timestamp) {
         updateWalkAnimation(delta,now);
         WeaponVisualController.update(now);
         NaoyaProjectionSystem.update(now);
+        SecretAwakeningController.update(now);
         NaoyaVFX.update(now);
         processCameraPhysics(delta);
  
@@ -3732,6 +4489,7 @@ function runGameLoop(timestamp) {
 // ════════════════════════════════════════════════════════
 function updateWalkAnimation(delta,now) {
     const rig=GAME_STATE.player.rig; if(!rig) return;
+    if(SecretAwakeningController.isTransforming()) return;   // hand-sign pose is driven manually during this phase
     const moving=GAME_STATE.input.forward||GAME_STATE.input.backward||
                  GAME_STATE.input.left||GAME_STATE.input.right||GAME_STATE.player.isDashing;
  
@@ -3778,7 +4536,7 @@ function updateWalkAnimation(delta,now) {
  
             // Upper-body lateral lean — mirrors the shoulder direction
             rig.upper.rotation.z = h.bodyLeanZ * tiltEnv;
- 
+
             // Optional body spin (currently only Naoya's spinning-kick hit uses this —
             // every other weapon's frame data omits `spinY`, so this is a no-op for them)
             if (h.spinY !== undefined) {
@@ -3808,6 +4566,7 @@ function updateWalkAnimation(delta,now) {
 function processPlayerLocomotion(delta,now) {
     if(GAME_STATE.player.hp<=0) return;
     if(AwakeningController.inputLocked()) return;    // cutscene input lock
+    if(GAME_STATE.player.abilityLocomotionLock) return;   // Naoya S4 Phase 1 is driving position itself this frame
     if(now < combatFX.hitstopEndTime) return;   // hitstop freeze
     if(GAME_STATE.player.isDashing){
         if(now>GAME_STATE.player.dashEndTime) GAME_STATE.player.isDashing=false;
@@ -3835,7 +4594,23 @@ function processPlayerLocomotion(delta,now) {
 function processEnemyAI(entry,delta,now) {
     const state=entry.state, mesh=entry.mesh;
     if(state.hp<=0) return;
- 
+
+    // ── Secret Awakening: world freezes through the transformation AND the Domain reveal ──
+    if(SecretAwakeningController.isLocking()) return;
+
+    // ── Naoya Bleed (Zenin Edge, S3) — stackable DoT, ticks independently of Projection ──
+    if(state.bleedStacks>0){
+        if(now>=state.bleedEndTime){
+            state.bleedStacks=0;
+        } else if(now>=state.bleedNextTick){
+            state.bleedNextTick=now+NAOYA_BLEED_TICK_MS;
+            // Marked-and-trapped synergy: a bleeding enemy caught inside a Projection Frame takes bonus tick damage
+            const tickMul=state.projectionTrapped?1.5:1.0;
+            state.hp=Math.max(0,state.hp-Math.round(state.bleedStacks*NAOYA_BLEED_DMG_PER_STACK*tickMul));
+            if(state.hp<=0){ WaveManager.onEnemyDeath(entry); return; }
+        }
+    }
+
     // ── Naoya Projection: trapped enemies are fully frozen — no movement, no attack ──
     if(state.projectionTrapped) {
         mesh.position.x=Math.max(-38,Math.min(38,mesh.position.x));
@@ -3888,6 +4663,7 @@ function processEnemyAI(entry,delta,now) {
 // ════════════════════════════════════════════════════════
 function processCameraPhysics(delta) {
     if(AwakeningController.overrideCamera(delta)) return;   // cutscene camera
+    if(SecretAwakeningController.overrideCamera(delta)) return;   // Secret Awakening transformation camera
     const now=performance.now();
  
     // Forward anticipation — lean camera slightly toward movement direction
@@ -3924,7 +4700,20 @@ window.onload = init;
 </body>
 </html>
  
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
