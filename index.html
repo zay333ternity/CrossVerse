@@ -4305,12 +4305,12 @@ const SecretAwakeningController = {
             const el = document.getElementById(id); if (el) el.style.display = 'none';
         });
     },
-    _showHUD() {
+      _showHUD() {
         ['ui-layer', 'dash-indicator', 'awakening-bar-wrap', 'ability-bar'].forEach(id => {
             const el = document.getElementById(id); if (el) el.style.display = '';
         });
-    }
-};
+    },
+    
 // Per-frame animation for all domain visual elements — called from update()
     _updateDomainVisuals(now) {
         const s = SECRET_AWAKENING_STATE;
