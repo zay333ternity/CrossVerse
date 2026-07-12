@@ -3806,14 +3806,14 @@ const SecretAwakeningController = {
             return;
         }
 
-        if (s.phase === 'domain') {
+      if (s.phase === 'domain') {
             this._safeCall('domainLockTick', () => this._domainLockTick(now));
+            this._safeCall('domainVisuals', () => this._updateDomainVisuals(now));
             if (s.domainEye) {
-                s.domainEye.scale.y = (Math.sin(now * 0.0009) > 0.965) ? 0.06 : 1;   // slow blink
+                s.domainEye.scale.y = (Math.sin(now * 0.0009) > 0.965) ? 0.06 : 1;
             }
             if (el >= 10000) this._safeCall('endDomain', () => this._endDomain(now));
         }
-    },
 
     // Runs a beat callback in isolation — an exception here is logged and
     // skipped rather than propagating up and aborting the rest of this frame's
@@ -3873,7 +3873,7 @@ const SecretAwakeningController = {
         });
     },
 
-    _startDomain(now) {
+   _startDomain(now) {
         const s = SECRET_AWAKENING_STATE;
         if (s.phase === 'domain') return;   // idempotency guard — never re-run this
         s.phase = 'domain';
@@ -3888,8 +3888,8 @@ const SecretAwakeningController = {
         if (scene) {
             s.origBackground = scene.background;
             s.origFog = scene.fog;
-            scene.background = new THREE.Color(0x000003);
-            scene.fog = new THREE.FogExp2(0x000003, 0.02);
+            scene.background = new THREE.Color(0x000510);
+            scene.fog = new THREE.FogExp2(0x000510, 0.045);
         }
     },
 
@@ -3899,8 +3899,15 @@ const SecretAwakeningController = {
         GAME_STATE.enemies.forEach(entry => {
             if (entry.state.projectionTrapped) NaoyaProjectionSystem.release(entry, true);
         });
+               // Clean up enemy projection glow lights (not children of domainGroup)
+        if (s._domainEnemyLights) {
+            s._domainEnemyLights.forEach(light => { scene.remove(light); light.dispose(); });
+            s._domainEnemyLights = null;
+        }
         if (s.domainGroup && scene) scene.remove(s.domainGroup);
         s.domainGroup = null; s.domainEye = null;
+        s._domainFilmStrips = null; s._domainParticles = null;
+        s._domainOrbs = null; s._domainGlowRing = null;
         if (scene) {
             if (s.origBackground !== undefined) scene.background = s.origBackground;
             if (s.origFog !== undefined) scene.fog = s.origFog;
@@ -4088,39 +4095,197 @@ const SecretAwakeningController = {
     },
 
     _buildDomainEnvironment() {
+        const s = SECRET_AWAKENING_STATE;
         if (!scene) return;
-        const g = new THREE.Group();
-        const dome = new THREE.Mesh(
-            new THREE.SphereGeometry(45, 24, 16),
-            new THREE.MeshBasicMaterial({ color: 0x000005, side: THREE.BackSide })
+        const group = new THREE.Group();
+        group.name = 'time_cell_moon_palace';
+
+        // ═══ 1. WET ORGANIC / FLESHY FLOOR ═══
+        const floorGeo = new THREE.PlaneGeometry(80, 80, 40, 40);
+        const fPos = floorGeo.attributes.position;
+        for (let i = 0; i < fPos.count; i++) {
+            const x = fPos.getX(i), y = fPos.getY(i);
+            fPos.setZ(i, Math.sin(x * 0.4) * Math.cos(y * 0.4) * 0.18 + (Math.random() - 0.5) * 0.06);
+        }
+        floorGeo.computeVertexNormals();
+        const fleshFloor = new THREE.Mesh(floorGeo, new THREE.MeshStandardMaterial({
+            color: 0x2a0815, roughness: 0.25, metalness: 0.08,
+            emissive: 0x0c0410, emissiveIntensity: 0.35
+        }));
+        fleshFloor.rotation.x = -Math.PI / 2;
+        fleshFloor.position.y = 0.01;
+        group.add(fleshFloor);
+
+        // Wet sheen overlay
+        const sheen = new THREE.Mesh(
+            new THREE.PlaneGeometry(80, 80),
+            new THREE.MeshBasicMaterial({ color: 0x1a2244, transparent: true, opacity: 0.05, side: THREE.DoubleSide })
         );
-        g.add(dome);
-        // Corridor floor — living-flesh placeholder (organic-toned, faint blue emissive pulse)
-        const floor = new THREE.Mesh(
-            new THREE.PlaneGeometry(14, 60),
-            new THREE.MeshStandardMaterial({ color: 0x3a1220, emissive: 0x1a3a6b, emissiveIntensity: 0.25, roughness: 0.85 })
+        sheen.rotation.x = -Math.PI / 2;
+        sheen.position.y = 0.025;
+        group.add(sheen);
+
+        // ═══ 2. BLACK VOID ENCLOSURE ═══
+        const voidBox = new THREE.Mesh(
+            new THREE.BoxGeometry(82, 28, 82),
+            new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide })
         );
-        floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0.02, -10);
-        g.add(floor);
-        // Giant eye at the corridor's end
+        voidBox.position.y = 14;
+        group.add(voidBox);
+
+        // ═══ 3. FLOATING FILM STRIPS ═══
+        const filmStrips = [];
+        for (let i = 0; i < 14; i++) {
+            const w = 0.5 + Math.random() * 0.5;
+            const h = 4 + Math.random() * 6;
+            const strip = new THREE.Mesh(
+                new THREE.PlaneGeometry(w, h),
+                new THREE.MeshBasicMaterial({
+                    color: 0x4499cc, transparent: true,
+                    opacity: 0.06 + Math.random() * 0.08,
+                    side: THREE.DoubleSide
+                })
+            );
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 8 + Math.random() * 25;
+            strip.position.set(
+                Math.cos(angle) * dist,
+                1.5 + Math.random() * 9,
+                Math.sin(angle) * dist
+            );
+            strip.rotation.set(
+                (Math.random() - 0.5) * 0.4,
+                Math.random() * Math.PI * 2,
+                (Math.random() - 0.5) * 0.4
+            );
+            strip.userData = {
+                rotSpeed: (Math.random() - 0.5) * 0.25,
+                floatOff: Math.random() * Math.PI * 2,
+                floatSpd: 0.25 + Math.random() * 0.4,
+                baseY: strip.position.y
+            };
+            group.add(strip);
+            filmStrips.push(strip);
+
+            // Horizontal frame-division lines on each strip
+            const divs = 2 + Math.floor(Math.random() * 2);
+            for (let d = 1; d <= divs; d++) {
+                const line = new THREE.Mesh(
+                    new THREE.PlaneGeometry(w * 0.85, 0.02),
+                    new THREE.MeshBasicMaterial({ color: 0x66aadd, transparent: true, opacity: 0.12, side: THREE.DoubleSide })
+                );
+                line.position.set(0, -h / 2 + (h / (divs + 1)) * d, 0.001);
+                strip.add(line);
+            }
+        }
+        s._domainFilmStrips = filmStrips;
+
+        // ═══ 4. BLUE CURSED-ENERGY PARTICLES ═══
+        const PCOUNT = 280;
+        const pGeo = new THREE.BufferGeometry();
+        const pArr = new Float32Array(PCOUNT * 3);
+        const pVels = [];
+        for (let i = 0; i < PCOUNT; i++) {
+            pArr[i * 3]     = (Math.random() - 0.5) * 60;
+            pArr[i * 3 + 1] = Math.random() * 14;
+            pArr[i * 3 + 2] = (Math.random() - 0.5) * 60;
+            pVels.push({
+                x: (Math.random() - 0.5) * 0.4,
+                y: 0.15 + Math.random() * 0.6,
+                z: (Math.random() - 0.5) * 0.4
+            });
+        }
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pArr, 3));
+        const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({
+            color: 0x3399ff, size: 0.18, transparent: true, opacity: 0.55,
+            blending: THREE.AdditiveBlending, depthWrite: false
+        }));
+        particles.userData.velocities = pVels;
+        group.add(particles);
+        s._domainParticles = particles;
+
+        // ═══ 5. GIANT EYE CENTERPIECE ═══
         const eyeGroup = new THREE.Group();
+
+        const sclera = new THREE.Mesh(
+            new THREE.SphereGeometry(4.5, 28, 18),
+            new THREE.MeshStandardMaterial({
+                color: 0x180a10, roughness: 0.45,
+                emissive: 0x12060e, emissiveIntensity: 0.4
+            })
+        );
+        eyeGroup.add(sclera);
+
         const iris = new THREE.Mesh(
-            new THREE.SphereGeometry(1.6, 16, 16),
-            new THREE.MeshStandardMaterial({ color: 0x1c5fd6, emissive: 0x2a6fd6, emissiveIntensity: 0.9 })
+            new THREE.CircleGeometry(2.0, 28),
+            new THREE.MeshBasicMaterial({ color: 0x1a55aa, transparent: true, opacity: 0.85 })
         );
-        iris.position.z = 3.6;
-        eyeGroup.add(
-            new THREE.Mesh(new THREE.SphereGeometry(4, 16, 16), new THREE.MeshStandardMaterial({ color: 0xe8e4e0, emissive: 0x4fa8ff, emissiveIntensity: 0.15 })),
-            iris
+        iris.position.z = 4.45;
+        eyeGroup.add(iris);
+
+        const irisRing = new THREE.Mesh(
+            new THREE.TorusGeometry(2.0, 0.1, 8, 36),
+            new THREE.MeshBasicMaterial({ color: 0x44aaff, transparent: true, opacity: 0.65 })
         );
-        eyeGroup.position.set(0, 8, -38);
-        g.add(eyeGroup);
-        const light = new THREE.PointLight(0x4fa8ff, 1.2, 60);
-        light.position.set(0, 6, -15);
-        g.add(light);
-        scene.add(g);
-        SECRET_AWAKENING_STATE.domainGroup = g;
-        SECRET_AWAKENING_STATE.domainEye = eyeGroup;
+        irisRing.position.z = 4.45;
+        eyeGroup.add(irisRing);
+
+        const pupil = new THREE.Mesh(
+            new THREE.CircleGeometry(0.9, 20),
+            new THREE.MeshBasicMaterial({ color: 0x000000 })
+        );
+        pupil.position.z = 4.46;
+        eyeGroup.add(pupil);
+
+        // Vein lines radiating from iris
+        for (let v = 0; v < 8; v++) {
+            const a = (v / 8) * Math.PI * 2;
+            const vGeo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(Math.cos(a) * 2.1, Math.sin(a) * 2.1, 4.44),
+                new THREE.Vector3(Math.cos(a) * 4.2, Math.sin(a) * 4.2, 4.3)
+            ]);
+            eyeGroup.add(new THREE.Line(vGeo, new THREE.LineBasicMaterial({
+                color: 0x661122, transparent: true, opacity: 0.4
+            })));
+        }
+
+        eyeGroup.position.set(0, 9, -28);
+        eyeGroup.rotation.x = -0.12;
+        group.add(eyeGroup);
+
+        // ═══ 6. ATMOSPHERIC GLOW ORBS ═══
+        const orbs = [];
+        for (let i = 0; i < 8; i++) {
+            const orb = new THREE.Mesh(
+                new THREE.SphereGeometry(0.25 + Math.random() * 0.35, 8, 8),
+                new THREE.MeshBasicMaterial({
+                    color: 0x2255ff, transparent: true,
+                    opacity: 0.1 + Math.random() * 0.1
+                })
+            );
+            const a = Math.random() * Math.PI * 2;
+            const d = 5 + Math.random() * 28;
+            orb.position.set(Math.cos(a) * d, 1 + Math.random() * 7, Math.sin(a) * d);
+            orb.userData.pulseOff = Math.random() * Math.PI * 2;
+            group.add(orb);
+            orbs.push(orb);
+        }
+        s._domainOrbs = orbs;
+
+        // ═══ 7. GROUND GLOW RING ═══
+        const glowRing = new THREE.Mesh(
+            new THREE.TorusGeometry(12, 0.15, 6, 48),
+            new THREE.MeshBasicMaterial({ color: 0x2255cc, transparent: true, opacity: 0.2 })
+        );
+        glowRing.rotation.x = Math.PI / 2;
+        glowRing.position.y = 0.05;
+        group.add(glowRing);
+        s._domainGlowRing = glowRing;
+
+        scene.add(group);
+        s.domainGroup = group;
+        s.domainEye = eyeGroup;
+        s._domainEnemyLights = new Map();
     },
 
     _showBlackScreen() {
@@ -4146,7 +4311,72 @@ const SecretAwakeningController = {
         });
     }
 };
+// Per-frame animation for all domain visual elements — called from update()
+    _updateDomainVisuals(now) {
+        const s = SECRET_AWAKENING_STATE;
+        if (!s.domainGroup) return;
+        const t = now * 0.001;
+        const dt = 0.016;
 
+        // Film strips: gentle float + slow rotate
+        if (s._domainFilmStrips) {
+            s._domainFilmStrips.forEach(strip => {
+                strip.rotation.y += strip.userData.rotSpeed * dt;
+                strip.position.y = strip.userData.baseY + Math.sin(t * strip.userData.floatSpd + strip.userData.floatOff) * 0.6;
+            });
+        }
+
+        // Particles: rise upward, wrap at ceiling
+        if (s._domainParticles) {
+            const pos = s._domainParticles.geometry.attributes.position;
+            const vels = s._domainParticles.userData.velocities;
+            for (let i = 0; i < vels.length; i++) {
+                let x = pos.getX(i) + vels[i].x * dt;
+                let y = pos.getY(i) + vels[i].y * dt;
+                let z = pos.getZ(i) + vels[i].z * dt;
+                if (y > 14) { y = 0; x = (Math.random() - 0.5) * 60; z = (Math.random() - 0.5) * 60; }
+                pos.setXYZ(i, x, y, z);
+            }
+            pos.needsUpdate = true;
+        }
+
+        // Glow orbs: pulse scale + opacity
+        if (s._domainOrbs) {
+            s._domainOrbs.forEach(orb => {
+                const p = 0.6 + Math.sin(t * 1.8 + orb.userData.pulseOff) * 0.4;
+                orb.scale.setScalar(p);
+                orb.material.opacity = 0.08 + Math.sin(t * 1.8 + orb.userData.pulseOff) * 0.06;
+            });
+        }
+
+        // Ground glow ring: slow rotate + pulse
+        if (s._domainGlowRing) {
+            s._domainGlowRing.rotation.z = t * 0.15;
+            s._domainGlowRing.material.opacity = 0.12 + Math.sin(t * 1.2) * 0.08;
+        }
+
+        // Projection glow on trapped enemies — blue point light follows each
+        if (s._domainEnemyLights) {
+            GAME_STATE.enemies.forEach((entry, idx) => {
+                const mesh = entry.mesh;
+                if (!mesh) return;
+                if (entry.state.projectionTrapped) {
+                    if (!s._domainEnemyLights.has(idx)) {
+                        const light = new THREE.PointLight(0x4488ff, 1.5, 6);
+                        scene.add(light);
+                        s._domainEnemyLights.set(idx, light);
+                    }
+                    const light = s._domainEnemyLights.get(idx);
+                    light.position.set(mesh.position.x, mesh.position.y + 1.5, mesh.position.z);
+                    light.intensity = 1.2 + Math.sin(t * 3) * 0.5;
+                } else if (s._domainEnemyLights.has(idx)) {
+                    scene.remove(s._domainEnemyLights.get(idx));
+                    s._domainEnemyLights.get(idx).dispose();
+                    s._domainEnemyLights.delete(idx);
+                }
+            });
+        }
+    },
 const NAOYA_PROJECTION_DURATION_MS = 5000;
 // ── Naoya Bleed (Zenin Edge, S3) ──
 const NAOYA_BLEED_TICK_MS = 700;
