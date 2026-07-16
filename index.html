@@ -920,10 +920,10 @@
      no-op for every other character. ── -->
 <div id="kael-overclock-tint"></div>
 <div id="kael-activation-overlay">
-    <img id="kael-activation-gif" src="kaelactivation.gif" alt="">
-    <video id="kael-activation-audio" src="kaelactivation.mp4" style="display:none;" playsinline></video>
+    <img id="kael-activation-gif" src="sandyanimation.gif" alt="">
+    <video id="kael-activation-audio" src="sandysfx.mp4" style="display:none;" playsinline></video>
 </div>
-<audio id="kael-awakening-theme" src="kaelawakeningtheme.mp4" style="display:none;"></audio>
+<audio id="kael-awakening-theme" src="Davidawakeningmusic.mp4" style="display:none;"></audio>
  
 <!-- ── TITLE SCREEN ── -->
 <div id="title-screen">
@@ -1127,12 +1127,11 @@
 // picks it up automatically.
 // ════════════════════════════════════════════════════════
 const KAEL_ASSETS = {
-    activationGif:      'kaelactivation.gif',
-    activationAudioMp4: 'kaelactivation.mp4',
-    awakeningThemeMp4:  'kaelawakeningtheme.mp4',
-    portrait:           'kaelpfp.jpeg'
+    activationGif:      'sandyanimation.gif',
+    activationAudioMp4: 'sandysfx.mp4',
+    awakeningThemeMp4:  'Davidawakeningmusic.mp4',
+    portrait:           'David.jpeg'
 };
-
 const CharacterData = {
     TOJI: {
         id:'TOJI',
@@ -1272,22 +1271,22 @@ const CharacterData = {
     // ════════════════════════════════════════════════════════
     KAEL: {
         id:'KAEL',
-        name:'Kael',
+        name:'David Martinez',
         title:'THE NIGHT CITY LEGEND',
         role:'Cyber Enhanced Speed Fighter',
         difficulty:'Extreme',
         stars:5,
-        combatStyle:'Overclock Speed Combat / Pistol Barrage',
+        combatStyle:'Sandevistan(OverClock) Speed Combat / Pistol Barrage',
         description:'A cyber-enhanced brawler who overclocks his own nervous system, moving faster than the eye can track while enemies are locked in place, closing every gap with heavy cyber punches and precision pistol fire.',
-        strengths:['Overclock Time-Distortion','Extreme Burst Speed','Strong Pistol Zoning','Devastating Awakening Buffs'],
-        weaknesses:['Overclock Requires Charge','Vulnerable While Charge Regenerates','High Skill Ceiling'],
+        strengths:['Sandevistan(Overclock) Time-Distortion','Extreme Burst Speed','Strong Pistol Zoning','Devastating Awakening Buffs'],
+        weaknesses:['Sandevistan(Overclock) Requires Charge','Vulnerable While Charge Regenerates','High Skill Ceiling'],
         weapons:['Cyber-Enhanced Fists','Overclock Sidearm'],
         image:KAEL_ASSETS.portrait,
         playable:true,
         color:'#39ff9c',
         awakening:{
             name:'Cyber Limit Break',
-            description:'Kael\'s cyber systems redline. RGB afterimages expand outward as his whole combat suite is pushed past its rated limits.',
+            description:'David\'s cyber systems redline. RGB afterimages expand outward as his whole combat suite is pushed past its rated limits.',
             duration:60,
             buffs:{ damageMultiplier:1.70, attackSpeedMultiplier:1.40, speedMultiplier:1.35, cooldownReduction:0.50 }
         }
