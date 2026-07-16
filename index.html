@@ -383,6 +383,99 @@
             50%      { box-shadow:0 0 26px 8px rgba(190,240,255,0.95); }
         }
 
+        /* ════════════════════════════════════════════════════════
+           KAEL — "THE NIGHT CITY LEGEND"
+           Everything below is scoped under .theme-kael / #kael-* / #overclock-*
+           so it is a complete no-op for every other character. Modular +
+           replaceable per the Kael implementation brief.
+           ════════════════════════════════════════════════════════ */
+
+        /* Kael HUD ability-bar skin — neon green / cyber teal, glitch-flavoured */
+        #ability-bar.theme-kael .ab-slot {
+            background:linear-gradient(160deg, rgba(10,32,26,0.66), rgba(4,10,10,0.86));
+            border:1px solid #29e07a;
+            box-shadow:0 0 10px rgba(40,230,150,0.18) inset, 0 0 6px rgba(30,220,190,0.20);
+        }
+        #ability-bar.theme-kael .ab-slot.ab-ready {
+            border-color:#7dffc2; box-shadow:0 0 14px rgba(60,255,190,0.65);
+        }
+        #ability-bar.theme-kael .ab-cooldown-fill {
+            background:linear-gradient(0deg,rgba(30,220,150,0.34),rgba(120,255,220,0.20));
+        }
+        #ability-bar.theme-kael .ab-key-lbl { color:#5cf7b0; text-shadow:0 0 6px rgba(60,255,190,0.8); }
+        #ability-bar.theme-kael .ab-slot.ab-ready .ab-key-lbl { color:#d4fff0; }
+        #ability-bar.theme-kael .ab-name-lbl { color:#3fae86; }
+        #ability-bar.theme-kael .ab-slot.ab-ready .ab-name-lbl { color:#c8fff0; }
+        .player-panel.kael-overclock-active {
+            border-color:#39ff9c !important;
+            box-shadow:0 0 18px rgba(57,255,156,0.55) !important;
+            animation:kael-overclock-pulse 0.5s ease-in-out infinite;
+        }
+        @keyframes kael-overclock-pulse {
+            0%,100% { box-shadow:0 0 12px rgba(57,255,156,0.4); }
+            50%      { box-shadow:0 0 26px rgba(120,255,210,0.85); }
+        }
+        /* Kael Cyber Limit Break awakening glow (distinct neon-green/teal from every other character) */
+        .player-panel.kael-limitbreak-active {
+            border-color:#00ffc8 !important;
+            box-shadow:0 0 20px rgba(0,255,200,0.6) !important;
+            animation:kael-limitbreak-pulse 0.9s ease-in-out infinite;
+        }
+        @keyframes kael-limitbreak-pulse {
+            0%,100% { box-shadow:0 0 12px rgba(0,255,200,0.45); }
+            50%      { box-shadow:0 0 30px rgba(120,255,225,0.9); }
+        }
+
+        /* ── OVERLOCK CHARGE meter — Kael-only resource, sits ABOVE the Awakening
+             meter, never near health. Hidden for every other character. ── */
+        #overclock-bar-wrap {
+            position:absolute; bottom:118px; left:50%; transform:translateX(-50%);
+            display:flex; flex-direction:column; align-items:center; gap:4px;
+            opacity:0; transition:opacity 0.4s; pointer-events:none;
+        }
+        #overclock-bar-wrap.kael-visible.game-visible { opacity:1; }
+        #overclock-label {
+            color:#39ff9c; font-size:9px; font-weight:700; letter-spacing:2px;
+            text-transform:uppercase; text-shadow:0 0 8px rgba(57,255,156,0.7);
+        }
+        #overclock-meter-outer {
+            width:210px; height:7px; background:#081008; border-radius:4px;
+            border:1px solid #124a2e; overflow:hidden;
+        }
+        #overclock-meter-fill {
+            height:100%; width:0%; border-radius:4px;
+            background:linear-gradient(90deg,#0f7a4c,#39ff9c);
+            box-shadow:0 0 6px rgba(57,255,156,0.55);
+            transition:width 0.12s ease-out;
+        }
+        #overclock-sync-hint {
+            color:#5cf7b0; font-size:8.5px; font-weight:700; letter-spacing:1px;
+            opacity:0; transition:opacity 0.25s;
+            text-shadow:0 0 10px rgba(92,247,176,0.85);
+        }
+        #overclock-bar-wrap.overclock-synced #overclock-sync-hint { opacity:1; }
+
+        /* ── OVERLOCK ACTIVATION overlay — plays kaelactivation.gif (a real,
+             continuously-playing animation, never a frozen frame) full-screen,
+             in sync with kaelactivation.mp4 audio. ── */
+        #kael-activation-overlay {
+            position:fixed; inset:0; z-index:9500;
+            display:none; align-items:center; justify-content:center;
+            background:#000; pointer-events:none;
+        }
+        #kael-activation-overlay.active { display:flex; }
+        #kael-activation-overlay img { width:100%; height:100%; object-fit:cover; }
+
+        /* ── OVERLOCK time-distortion screen tint — green cyber tint + slowdown feel.
+             Identity is RGB speed afterimages, NOT a glow/aura on Kael himself. ── */
+        #kael-overclock-tint {
+            position:fixed; inset:0; z-index:850; pointer-events:none;
+            background:radial-gradient(ellipse at center, rgba(20,255,150,0.0) 0%, rgba(10,60,40,0.22) 100%);
+            box-shadow:inset 0 0 160px rgba(20,255,150,0.28);
+            opacity:0; transition:opacity 0.25s;
+        }
+        #kael-overclock-tint.active { opacity:1; }
+
         /* ── Uraume Freeze Meter — only rendered while an enemy has freeze buildup ── */
         .freeze-meter-bar {
             position:absolute; width:48px; height:5px;
@@ -821,6 +914,16 @@
  
 <!-- 3D CANVAS (always behind everything) -->
 <div id="canvas-container"></div>
+
+<!-- ── KAEL — OVERLOCK ACTIVATION overlay + time-distortion tint.
+     Modular / additive: only ever shown by KaelOverclockSystem, complete
+     no-op for every other character. ── -->
+<div id="kael-overclock-tint"></div>
+<div id="kael-activation-overlay">
+    <img id="kael-activation-gif" src="kaelactivation.gif" alt="">
+    <video id="kael-activation-audio" src="kaelactivation.mp4" style="display:none;" playsinline></video>
+</div>
+<audio id="kael-awakening-theme" src="kaelawakeningtheme.mp4" style="display:none;"></audio>
  
 <!-- ── TITLE SCREEN ── -->
 <div id="title-screen">
@@ -883,6 +986,7 @@
             <li><strong>SHIFT</strong> — Dash Burst</li>
             <li class="ctrl-swap"><strong>Q / E</strong> — Swap Weapons</li>
             <li><strong>G</strong> — Awakening (meter full)</li>
+            <li class="ctrl-kael-overlock" style="display:none;"><strong>R</strong> — Overlock (charge above 5%)</li>
         </ul>
     </div>
 </div>
@@ -894,6 +998,17 @@
     <div style="display:flex;gap:12px;align-items:center;">
         <div id="awakening-meter-text">0</div>
         <div id="awakening-ready-hint">[ G ] AWAKEN</div>
+    </div>
+</div>
+
+<!-- ── KAEL — OVERLOCK CHARGE (Kael-only resource, sits above Awakening,
+     never near health). Modular: hidden/no-op for every other character. ── -->
+<div id="overclock-bar-wrap">
+    <div id="overclock-label">OVERLOCK CHARGE</div>
+    <div id="overclock-meter-outer"><div id="overclock-meter-fill"></div></div>
+    <div style="display:flex;gap:12px;align-items:center;">
+        <div id="overclock-meter-text">0%</div>
+        <div id="overclock-sync-hint">SYSTEM SYNCHRONIZED</div>
     </div>
 </div>
  
@@ -1005,6 +1120,19 @@
 // ════════════════════════════════════════════════════════
 // CHARACTER DATA
 // ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
+// KAEL_ASSETS — single reference point for every Kael file. Nothing else in
+// the codebase should hardcode a "kael*" filename directly; swap files here
+// and every system (activation overlay, awakening theme, char-select art)
+// picks it up automatically.
+// ════════════════════════════════════════════════════════
+const KAEL_ASSETS = {
+    activationGif:      'kaelactivation.gif',
+    activationAudioMp4: 'kaelactivation.mp4',
+    awakeningThemeMp4:  'kaelawakeningtheme.mp4',
+    portrait:           'kaelpfp.jpeg'
+};
+
 const CharacterData = {
     TOJI: {
         id:'TOJI',
@@ -1136,6 +1264,35 @@ const CharacterData = {
         }
     },
  
+    // ════════════════════════════════════════════════════════
+    // KAEL — "THE NIGHT CITY LEGEND" (original character, own slot).
+    // Not a reskin of Toji or any other roster entry: own animations, own
+    // UI theme, own awakening, own weapons/VFX — see KAEL_ASSETS and the
+    // KaelOverclockSystem / AbilitySystem._DEFS_KAEL / KaelWeaponVFX blocks.
+    // ════════════════════════════════════════════════════════
+    KAEL: {
+        id:'KAEL',
+        name:'Kael',
+        title:'THE NIGHT CITY LEGEND',
+        role:'Cyber Enhanced Speed Fighter',
+        difficulty:'Extreme',
+        stars:5,
+        combatStyle:'Overclock Speed Combat / Pistol Barrage',
+        description:'A cyber-enhanced brawler who overclocks his own nervous system, moving faster than the eye can track while enemies are locked in place, closing every gap with heavy cyber punches and precision pistol fire.',
+        strengths:['Overclock Time-Distortion','Extreme Burst Speed','Strong Pistol Zoning','Devastating Awakening Buffs'],
+        weaknesses:['Overclock Requires Charge','Vulnerable While Charge Regenerates','High Skill Ceiling'],
+        weapons:['Cyber-Enhanced Fists','Overclock Sidearm'],
+        image:KAEL_ASSETS.portrait,
+        playable:true,
+        color:'#39ff9c',
+        awakening:{
+            name:'Cyber Limit Break',
+            description:'Kael\'s cyber systems redline. RGB afterimages expand outward as his whole combat suite is pushed past its rated limits.',
+            duration:60,
+            buffs:{ damageMultiplier:1.70, attackSpeedMultiplier:1.40, speedMultiplier:1.35, cooldownReduction:0.50 }
+        }
+    },
+
     MEGUMI: {
         id:'MEGUMI',
         name:'Megumi Fushiguro',
@@ -1323,6 +1480,7 @@ const MenuUI = {
             const dash = document.getElementById('dash-indicator');
             dash.classList.add('game-visible');
             document.getElementById('awakening-bar-wrap').classList.add('game-visible');
+            document.getElementById('overclock-bar-wrap').classList.add('game-visible');
             document.getElementById('ability-bar').classList.add('game-visible');
 
             // Kick off gameplay
@@ -1353,6 +1511,14 @@ const MenuUI = {
                 SECRET_AWAKENING_STATE.cursedGroup = null;
             }
             if (pMesh) pMesh.visible = true;
+
+            // Kael — fresh Overlock Charge each run (own reset, independent of the perk/wave/secret-awakening resets above)
+            if (typeof KaelOverclockSystem !== 'undefined') {
+                KAEL_OVERCLOCK_STATE.charge = 30;
+                KAEL_OVERCLOCK_STATE.phase = 'idle';
+                KAEL_OVERCLOCK_STATE.lastRegenTick = 0;
+                KaelOverclockSystem.onCharacterChange(currentCharacterId);
+            }
         });
     }
 };
@@ -1601,6 +1767,15 @@ function _applyCharacterConfig(charId) {
             awakeningLabel: 'FROZEN DOMINATION', awakeningColor: '#8fe0ff',
             cutsceneType: 'uraume'   // drives Uraume-specific quick frost-spread awakening
         });
+    } else if(charId === 'KAEL'){
+        // Kael's meter is powered by the Overlock Charge / R key, not this bar —
+        // the G-key Awakening meter still exists in parallel (Cyber Limit Break).
+        AwakeningController.setConfig({
+            displayName: 'CYBER LIMIT BREAK', damageMul: 1.70, damageReceiveMul: 0.85,
+            speedMul: 1.35, meterGain: 8, activeDuration: 60000,
+            awakeningLabel: 'CYBER LIMIT BREAK', awakeningColor: '#00ffc8',
+            cutsceneType: 'kael'   // no cinematic, no camera cut — see AwakeningController._startCutscene
+        });
     } else {
         // Toji (default)
         AwakeningController.setConfig({
@@ -1614,7 +1789,7 @@ function _applyCharacterConfig(charId) {
     AbilitySystem.setCharacter(charId);
 
     // Weapon
-    const startWep = (charId === 'NANAMI') ? WEAPONS.CLEAVER : (charId === 'NAOYA') ? WEAPONS.FISTS : (charId === 'URAUME') ? WEAPONS.FROST : WEAPONS.KATANA;
+    const startWep = (charId === 'NANAMI') ? WEAPONS.CLEAVER : (charId === 'NAOYA') ? WEAPONS.FISTS : (charId === 'URAUME') ? WEAPONS.FROST : (charId === 'KAEL') ? WEAPONS.KAEL_FISTS : WEAPONS.KATANA;
     GAME_STATE.player.currentWeapon = startWep;
     const wepNameEl = document.getElementById('current-weapon-name');
     if(wepNameEl) wepNameEl.innerText = startWep.name;
@@ -1648,6 +1823,18 @@ function _applyCharacterConfig(charId) {
         if(rm.hr) rm.hr.color.setHex(0xf3f4f7);   // (shared hair boxes hidden — custom bob used instead)
         if(rm.sh) rm.sh.color.setHex(0x120f16);   // dark straw sandals
         rm.sw.roughness = 0.72;
+    } else if(rm && charId === 'KAEL'){
+        // Kael front/back reference: bright yellow hi-vis hooded jacket (white
+        // reflective bands), dark undershirt visible at the collar, dark
+        // blue/navy trousers, light grey/white sneakers, brown-grey hair.
+        // Own model slot — colours are Kael-only, never touch Toji's rigMaterials
+        // defaults above/below.
+        if(rm.sw) rm.sw.color.setHex(0xf0d31c);   // bright yellow hi-vis jacket
+        if(rm.pt) rm.pt.color.setHex(0x2b3446);   // dark navy trousers
+        if(rm.sk) rm.sk.color.setHex(0xd8a878);   // skin tone
+        if(rm.hr) rm.hr.color.setHex(0x5a4a3c);   // brown-grey hair
+        if(rm.sh) rm.sh.color.setHex(0xd8dade);   // light grey/white sneakers
+        rm.sw.roughness = 0.55;   // synthetic hi-vis fabric reads glossier than Toji's matte jacket
     } else if(rm){
         // Toji — reset to original dark colours
         if(rm.sw) rm.sw.color.setHex(0x080808);
@@ -1664,6 +1851,7 @@ function _applyCharacterConfig(charId) {
     if(pMesh){
         if(charId === 'NAOYA') pMesh.scale.set(0.94, 1.04, 0.94);
         else if(charId === 'URAUME') pMesh.scale.set(0.92, 1.08, 0.90);   // tall, slim, elegant
+        else if(charId === 'KAEL') pMesh.scale.set(0.97, 1.03, 0.97);     // athletic, slightly leaner than Toji
         else pMesh.scale.set(1, 1, 1);
     }
 
@@ -1675,16 +1863,25 @@ function _applyCharacterConfig(charId) {
 
     // Uraume ice-themed ability bar skin (additive CSS class toggle only)
     const abilityBarEl = document.getElementById('ability-bar');
-    if(abilityBarEl) abilityBarEl.classList.toggle('theme-uraume', charId === 'URAUME');
+    if(abilityBarEl){
+        abilityBarEl.classList.toggle('theme-uraume', charId === 'URAUME');
+        abilityBarEl.classList.toggle('theme-kael', charId === 'KAEL');   // neon green / cyber teal HUD theme
+    }
+
+    // Kael — Overlock Charge bar only ever shows for Kael; every other
+    // character leaves it hidden (own module, complete no-op otherwise).
+    if (typeof KaelOverclockSystem !== 'undefined') KaelOverclockSystem.onCharacterChange(charId);
 
     // Attach the correct starting weapon model to the hand bone
     WeaponAttachmentSystem.attach(startWep);
 
-    // Controls overlay — swap weapon hint is Toji-only
+    // Controls overlay — swap weapon hint is Toji-only; Kael gets an Overlock hint instead
     const ctrlEl = document.getElementById('controls-overlay');
     if(ctrlEl){
         const qeHint = ctrlEl.querySelector('.ctrl-swap');
-        if(qeHint) qeHint.style.display = (charId==='NANAMI' || charId==='NAOYA' || charId==='URAUME') ? 'none' : '';
+        if(qeHint) qeHint.style.display = (charId==='NANAMI' || charId==='NAOYA' || charId==='URAUME' || charId==='KAEL') ? 'none' : '';
+        const kaelHint = ctrlEl.querySelector('.ctrl-kael-overlock');
+        if(kaelHint) kaelHint.style.display = (charId==='KAEL') ? '' : 'none';
     }
 }
  
@@ -1709,7 +1906,19 @@ const WEAPONS = {
     // executeAttackPipeline (see the URAUME block there), the same convention used
     // for Naoya's Projection passive.
     FROST:   { name:"Ice Reinforced Combat",     damage:16, range:2.9, attackSpeed:260, knockback:7,  special:"freeze",
-               hitstopDur:70,  shakeMag:0.16, arcForward:0.24, arcAngle:0.90 }
+               hitstopDur:70,  shakeMag:0.16, arcForward:0.24, arcAngle:0.90 },
+    // Kael — Cyber-Enhanced Fists: default unarmed M1 (heavy cyber punches). No
+    // hand model attached, same convention as Naoya's Fists/Uraume's Frost.
+    // "special":"overlock" is descriptive only — Overlock Charge regen/consume
+    // is handled additively by KaelOverclockSystem, not by this weapon block.
+    KAEL_FISTS: { name:"Cyber-Enhanced Fists",   damage:15, range:2.9, attackSpeed:230, knockback:7,  special:"overlock",
+               hitstopDur:65,  shakeMag:0.17, arcForward:0.24, arcAngle:0.95 },
+    // Kael — Overlock Sidearm: pistol reference data only. The pistol model is
+    // NEVER attached via WeaponAttachmentSystem/swapWeapon — per the design
+    // brief it only appears during S2 (Heavy Caliber) and S4 (Bullet Tempest),
+    // shown/hidden by KaelWeaponVFX.showPistol()/hidePistol().
+    KAEL_PISTOL: { name:"Overlock Sidearm",      damage:9,  range:16,  attackSpeed:140, knockback:3,  special:"pistol",
+               hitstopDur:40,  shakeMag:0.10, arcForward:0, arcAngle:0 }
 };
 const GAME_STATE = {
     player: {
@@ -1866,7 +2075,7 @@ const AwakeningController = {
  
     // ── Public queries ──────────────────────────────────
     isActive()      { return TOJI_AWAKENING_STATE.phase === 'active'; },
-    inputLocked()   { return TOJI_AWAKENING_STATE.phase === 'cutscene' || SecretAwakeningController.inputLocked(); },
+    inputLocked()   { return TOJI_AWAKENING_STATE.phase === 'cutscene' || SecretAwakeningController.inputLocked() || (typeof KaelOverclockSystem !== 'undefined' && KaelOverclockSystem.inputLocked()); },
     // Character config — set at game-start via setConfig()
     _cfg: { displayName:'THE ONE WHO LEFT IT ALL BEHIND', damageMul:1.25,
             damageReceiveMul:0.82, speedMul:1.22, meterGain:7,
@@ -1925,6 +2134,12 @@ const AwakeningController = {
             // Not a transformation, not armor, not a cinematic (per design brief).
             s.uraumeBurstDone = false;
             s.uraumeFrostGroup = null;
+            return;
+        }
+        if (this._cfg.cutsceneType === 'kael') {
+            // Kael: "Existing awakening button. No cinematic. No camera cut."
+            // Stands still while RGB afterimages expand outward, then straight to active —
+            // handled entirely in update()'s cutscene branch below.
             return;
         }
         // Toji: hide player for cinematic
@@ -2000,6 +2215,14 @@ const AwakeningController = {
             GAME_STATE.player.attackSpeedMul = 0.70;
             GAME_STATE.player.attackCooldownMs = WEAPONS.FISTS.attackSpeed * 0.70;
         }
+        // Kael: Cyber Limit Break — Attack speed +40% (reuses the same attackSpeedMul hook)
+        if (this._cfg.cutsceneType === 'kael') {
+            s.naoyaOrigAttackSpeedMul = GAME_STATE.player.attackSpeedMul;
+            s.naoyaOrigAttackCooldownMs = GAME_STATE.player.attackCooldownMs || 0;
+            GAME_STATE.player.attackSpeedMul = 0.60;   // -40% cooldown = +40% attack speed
+            GAME_STATE.player.attackCooldownMs = WEAPONS.KAEL_FISTS.attackSpeed * 0.60;
+            document.querySelector('.player-panel')?.classList.add('kael-limitbreak-active');
+        }
         // Damage & durability buffs live in getDamageMul / getDamageReceiveMul
         // Remove black hole if still present (Toji only)
         if(s.blackHole) { scene.remove(s.blackHole); s.blackHole = null; }
@@ -2029,6 +2252,16 @@ const AwakeningController = {
             GAME_STATE.player.attackSpeedMul = s.naoyaOrigAttackSpeedMul !== undefined ? s.naoyaOrigAttackSpeedMul : 1.0;
             GAME_STATE.player.attackCooldownMs = s.naoyaOrigAttackCooldownMs || 0;
         }
+        // Kael: restore normal attack cadence + clear Cyber Limit Break glow/tint
+        if (this._cfg.cutsceneType === 'kael') {
+            GAME_STATE.player.attackSpeedMul = s.naoyaOrigAttackSpeedMul !== undefined ? s.naoyaOrigAttackSpeedMul : 1.0;
+            GAME_STATE.player.attackCooldownMs = s.naoyaOrigAttackCooldownMs || 0;
+            document.querySelector('.player-panel')?.classList.remove('kael-limitbreak-active');
+            if (!KaelOverclockSystem.isActive()) {
+                const tint = document.getElementById('kael-overclock-tint');
+                if (tint) tint.classList.remove('active');
+            }
+        }
         // Uraume: disarm the S1 upgrade + stop falling snow
         if (this._cfg.cutsceneType === 'uraume') {
             s.uraumeS1Ready = false;
@@ -2049,6 +2282,7 @@ const AwakeningController = {
         // Nanami awakening: no cinematic camera override — stays in normal gameplay view
         if(this._cfg.cutsceneType === 'nanami') return false;
         if(this._cfg.cutsceneType === 'uraume') return false;   // gameplay-focused — no camera hijack
+        if(this._cfg.cutsceneType === 'kael') return false;     // "No camera cut" — per design brief
         if(this._cfg.cutsceneType === 'naoya') {
             // Short, subtle zoom toward Naoya — player still reads the action, not a full cutscene
             const elapsed = performance.now() - TOJI_AWAKENING_STATE.cutsceneStart;
@@ -2147,6 +2381,21 @@ const AwakeningController = {
                     s.uraumeFrostGroup = null;
                 }
                 if (el >= 1700) this._startActive();
+                return;
+            }
+
+            // ── Kael CYBER LIMIT BREAK (stands still, RGB afterimages expand
+            //    outward, screen distortion, awakening theme starts — no
+            //    cinematic, no camera cut) ──
+            if (this._cfg.cutsceneType === 'kael') {
+                if (el === 0 || el < 40) {
+                    const themeEl = document.getElementById('kael-awakening-theme');
+                    if (themeEl) { themeEl.src = KAEL_ASSETS.awakeningThemeMp4; themeEl.currentTime = 0; themeEl.play().catch(()=>{}); }
+                }
+                if (el % 90 < 20 && typeof KaelOverclockSystem !== 'undefined') KaelOverclockSystem._spawnAfterimage();
+                const tint = document.getElementById('kael-overclock-tint');
+                if (tint) tint.classList.add('active');
+                if (el >= 500) this._startActive();
                 return;
             }
 
@@ -2516,6 +2765,16 @@ const AbilitySystem = {
         S3:{ name:'🔷 Frozen Prison',             cd:15000, lastUsed:0 },
         S4:{ name:'🌨 Ice Field',                 cd:17000, lastUsed:0 }
     },
+    // Kael — names/order fixed per the implementation brief ("DO NOT CHANGE THESE").
+    // Each ability's NORMAL vs OVERLOCK behaviour is decided at cast time inside
+    // _kael_s1.._kael_s4 by reading KaelOverclockSystem.isActive() — the cooldowns
+    // below apply either way.
+    _DEFS_KAEL: {
+        S1:{ name:'Chrome Breaker',              cd:8000,  lastUsed:0 },
+        S2:{ name:'Heavy Caliber',                cd:11000, lastUsed:0 },
+        S3:{ name:'Relentless Assault',           cd:14000, lastUsed:0 },
+        S4:{ name:'Bullet Tempest',                cd:16000, lastUsed:0 }
+    },
     defs: {   // default to Toji so pre-game UI is safe
         S1:{ name:'Split Soul Flurry',       cd:8000,  lastUsed:0 },
         S2:{ name:'Heavenly Nullification',  cd:12000, lastUsed:0 },
@@ -2523,7 +2782,7 @@ const AbilitySystem = {
         S4:{ name:'Mirage Step',             cd:10000, lastUsed:0 }
     },
     setCharacter(charId) {
-        const src = charId==='NANAMI' ? this._DEFS_NANAMI : charId==='NAOYA' ? this._DEFS_NAOYA : charId==='URAUME' ? this._DEFS_URAUME : this._DEFS_TOJI;
+        const src = charId==='NANAMI' ? this._DEFS_NANAMI : charId==='NAOYA' ? this._DEFS_NAOYA : charId==='URAUME' ? this._DEFS_URAUME : charId==='KAEL' ? this._DEFS_KAEL : this._DEFS_TOJI;
         this.defs = {};
         for(const k in src) this.defs[k] = Object.assign({}, src[k], { lastUsed:0 });
         ['S1','S2','S3','S4'].forEach(k => {
@@ -2543,6 +2802,7 @@ const AbilitySystem = {
         if(currentCharacterId==='NANAMI') this['_nanami_'+key.toLowerCase()]();
         else if(currentCharacterId==='NAOYA') this['_naoya_'+key.toLowerCase()]();
         else if(currentCharacterId==='URAUME') this['_uraume_'+key.toLowerCase()]();
+        else if(currentCharacterId==='KAEL') this['_kael_'+key.toLowerCase()]();
         else this['_'+key.toLowerCase()]();
     },
  
@@ -2937,6 +3197,157 @@ const AbilitySystem = {
         const fwd=new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0),GAME_STATE.player.rotation);
         const center=pMesh.position.clone().addScaledVector(fwd, 3);
         UraumeFreezeSystem.addZone(center.x, center.z, awakened?9.5:7, awakened?9500:7000, 0.55, awakened?15:9);
+    },
+
+    // ════════════════════════════════════════════════════
+    // KAEL ABILITIES — DO NOT CHANGE NAMES/ORDER (per design brief).
+    // Every ability checks KaelOverclockSystem.isActive() to pick its NORMAL
+    // or OVERLOCK behaviour. Reuses ABILITY_ANIMS.S1-S4 (generic anim frames,
+    // same convention as every other roster character) and the shared
+    // applyDamageToEnemy/_mkAbWep hit pipeline. Kael-only VFX (RGB afterimages,
+    // bullets, pistol model) live in KaelOverclockSystem / KaelWeaponVFX /
+    // KaelBulletSystem — this block only calls their public methods.
+    // ════════════════════════════════════════════════════
+    // S1 — CHROME BREAKER
+    _kael_s1() {
+        if(!eMesh || GAME_STATE.enemy.hp<=0) return;
+        AbilityAnimController.play(ABILITY_ANIMS.S1);
+        const overlock = KaelOverclockSystem.isActive();
+        const wep = WEAPONS.KAEL_FISTS;
+        if(!overlock){
+            // NORMAL — forward burst: punch, elbow, rising kick, launch
+            const dir=new THREE.Vector3().subVectors(eMesh.position,pMesh.position).normalize();
+            const gap=Math.max(0,pMesh.position.distanceTo(eMesh.position)-1.8);
+            pMesh.position.addScaledVector(dir,Math.min(4.5,gap));
+            pMesh.position.x=Math.max(-38,Math.min(38,pMesh.position.x));
+            pMesh.position.z=Math.max(-38,Math.min(38,pMesh.position.z));
+            GAME_STATE.player.position.copy(pMesh.position);
+            [0,140,280].forEach((delay,i)=>{
+                setTimeout(()=>{
+                    if(GAME_STATE.enemy.hp>0 && pMesh.position.distanceTo(eMesh.position)<=wep.range+2){
+                        const d=new THREE.Vector3().subVectors(eMesh.position,pMesh.position).normalize();
+                        applyDamageToEnemy(_mkAbWep(Math.round(wep.damage*0.85),i===2?16:6),d,1);
+                    }
+                },delay);
+            });
+        } else {
+            // OVERLOCK — Kael vanishes behind RGB afterimages, punch/elbow/kick,
+            // reappears behind the enemy (no Kael glow/aura — identity is the afterimages)
+            pMesh.visible=false;
+            KaelOverclockSystem.burstAfterimages(4, 40);
+            setTimeout(()=>{
+                const toE=new THREE.Vector3().subVectors(eMesh.position,pMesh.position).normalize();
+                const dest=eMesh.position.clone().sub(toE.clone().multiplyScalar(1.6)); dest.y=0;
+                dest.x=Math.max(-38,Math.min(38,dest.x)); dest.z=Math.max(-38,Math.min(38,dest.z));
+                pMesh.position.copy(dest); GAME_STATE.player.position.copy(dest);
+                const fwd=new THREE.Vector3().subVectors(eMesh.position,pMesh.position);
+                GAME_STATE.player.rotation=Math.atan2(fwd.x,fwd.z); pMesh.rotation.y=GAME_STATE.player.rotation;
+                pMesh.visible=true;
+                KaelOverclockSystem.burstAfterimages(2, 30);
+                if(GAME_STATE.enemy.hp>0){
+                    const d=new THREE.Vector3().subVectors(eMesh.position,pMesh.position).normalize();
+                    applyDamageToEnemy(_mkAbWep(Math.round(wep.damage*1.4),20,70,0.24),d,1);
+                }
+            },220);
+        }
+    },
+
+    // S2 — HEAVY CALIBER
+    _kael_s2() {
+        if(!eMesh || GAME_STATE.enemy.hp<=0) return;
+        AbilityAnimController.play(ABILITY_ANIMS.S2);
+        const overlock = KaelOverclockSystem.isActive();
+        KaelWeaponVFX.showPistol();
+        if(!overlock){
+            // NORMAL — equip pistol, fire 6 powerful shots
+            for(let i=0;i<6;i++){
+                setTimeout(()=>{
+                    if(!eMesh) return;
+                    KaelBulletSystem.fire(pMesh.position.clone().add(new THREE.Vector3(0,1.2,0)), eMesh.position.clone().add(new THREE.Vector3(0,1,0)), false);
+                    if(GAME_STATE.enemy.hp>0){
+                        const d=new THREE.Vector3().subVectors(eMesh.position,pMesh.position).normalize();
+                        applyDamageToEnemy(_mkAbWep(9,3,40,0.08),d,2);
+                    }
+                },i*110);
+            }
+            setTimeout(()=>KaelWeaponVFX.hidePistol(), 6*110+250);
+        } else {
+            // OVERLOCK — Kael circles the enemy while shooting; bullets move
+            // extremely slowly (Kael is moving much faster, not the bullets being weaker)
+            const center=eMesh.position.clone();
+            const radius=4.2;
+            let ang=Math.atan2(pMesh.position.x-center.x, pMesh.position.z-center.z);
+            const SHOTS=10, STEP_MS=45;
+            for(let i=0;i<SHOTS;i++){
+                setTimeout(()=>{
+                    if(!eMesh) return;
+                    ang += 0.55;
+                    const pos=new THREE.Vector3(center.x+Math.sin(ang)*radius, 0, center.z+Math.cos(ang)*radius);
+                    pos.x=Math.max(-38,Math.min(38,pos.x)); pos.z=Math.max(-38,Math.min(38,pos.z));
+                    pMesh.position.copy(pos); GAME_STATE.player.position.copy(pos);
+                    const fwd=new THREE.Vector3().subVectors(eMesh.position,pMesh.position);
+                    GAME_STATE.player.rotation=Math.atan2(fwd.x,fwd.z); pMesh.rotation.y=GAME_STATE.player.rotation;
+                    KaelOverclockSystem.burstAfterimages(1,0);
+                    KaelBulletSystem.fire(pMesh.position.clone().add(new THREE.Vector3(0,1.2,0)), eMesh.position.clone().add(new THREE.Vector3(0,1,0)), true);
+                    if(GAME_STATE.enemy.hp>0){
+                        const d=new THREE.Vector3().subVectors(eMesh.position,pMesh.position).normalize();
+                        applyDamageToEnemy(_mkAbWep(7,1,25,0.06),d,2);
+                    }
+                },i*STEP_MS);
+            }
+            setTimeout(()=>KaelWeaponVFX.hidePistol(), SHOTS*STEP_MS+250);
+        }
+    },
+
+    // S3 — RELENTLESS ASSAULT
+    _kael_s3() {
+        if(!eMesh || GAME_STATE.enemy.hp<=0) return;
+        if(pMesh.position.distanceTo(eMesh.position)>6.5) return;
+        AbilityAnimController.play(ABILITY_ANIMS.S3);
+        const overlock = KaelOverclockSystem.isActive();
+        const wep = WEAPONS.KAEL_FISTS;
+        // Grab, three punches, knee, throw — 5 beats either way
+        const beats = [0,150,300,450,650];
+        beats.forEach((delay,i)=>{
+            setTimeout(()=>{
+                if(GAME_STATE.enemy.hp<=0) return;
+                if(overlock && i>0 && i<4){
+                    // OVERLOCK — Kael disappears between hits, RGB afterimages per impact
+                    pMesh.visible=false;
+                    setTimeout(()=>{ pMesh.visible=true; KaelOverclockSystem.burstAfterimages(1,0); },30);
+                }
+                const d=new THREE.Vector3().subVectors(eMesh.position,pMesh.position).normalize();
+                const isFinal = i===beats.length-1;
+                const dmg = isFinal ? Math.round(wep.damage*(overlock?1.8:1.3)) : Math.round(wep.damage*0.5);
+                applyDamageToEnemy(_mkAbWep(dmg, isFinal?22:4, isFinal?150:50, isFinal?0.30:0.10), d, 3);
+            },delay);
+        });
+    },
+
+    // S4 — BULLET TEMPEST
+    _kael_s4() {
+        AbilityAnimController.play(ABILITY_ANIMS.S4);
+        const overlock = KaelOverclockSystem.isActive();
+        KaelWeaponVFX.showPistol();
+        const shots = overlock ? 16 : 10;
+        const stepMs = overlock ? 35 : 60;
+        for(let i=0;i<shots;i++){
+            setTimeout(()=>{
+                if(!pMesh) return;
+                const ang=(i/shots)*Math.PI*2;
+                const dir=new THREE.Vector3(Math.sin(ang),0,Math.cos(ang));
+                const from=pMesh.position.clone().add(new THREE.Vector3(0,1.2,0));
+                const to=from.clone().add(dir.multiplyScalar(14));
+                KaelBulletSystem.fire(from, to, overlock);
+                if(overlock) KaelOverclockSystem.burstAfterimages(1,0);
+                // 360 barrage hits anything currently in range, player free to move throughout
+                if(eMesh && GAME_STATE.enemy.hp>0 && pMesh.position.distanceTo(eMesh.position)<=9){
+                    const d=new THREE.Vector3().subVectors(eMesh.position,pMesh.position).normalize();
+                    if(dir.dot(d) > 0.5) applyDamageToEnemy(_mkAbWep(overlock?7:6,2,30,0.06),d,4);
+                }
+            },i*stepMs);
+        }
+        setTimeout(()=>KaelWeaponVFX.hidePistol(), shots*stepMs+250);
     },
 
     updateUI(now) {
@@ -3433,6 +3844,7 @@ const WeaponManager = {
         this.weapons.KATANA   = this._buildKatana();
         this.weapons.SPEAR    = this._buildSpear();
         this.weapons.CLEAVER  = this._buildCleaver();
+        this.weapons.KAEL_PISTOL = this._buildKaelPistol();   // never attached via WeaponAttachmentSystem — shown only during Kael S2/S4 by KaelWeaponVFX
         WeaponAttachmentSystem.attach(GAME_STATE.player.currentWeapon);
     },
  
@@ -3677,6 +4089,41 @@ const WeaponManager = {
         root.rotation.set(-Math.PI * 0.52, Math.PI, 0.06);
         root.position.set(0.07, -0.20, 0.18);
         return root;
+    },
+
+    // ══ KAEL — OVERLOCK SIDEARM ══
+    // Compact cyber pistol. Own model slot / own materials (Kael-only —
+    // never shared with any other character's weapon set). Barrel always
+    // points down the grip's forward (+Z) axis so it never renders backwards,
+    // and the grip origin sits at the hand-bone attach point for correct
+    // hand placement regardless of which hand bone it's parented to.
+    _buildKaelPistol() {
+        const root = new THREE.Group();
+        const M = this._mesh.bind(this);
+
+        const mBody  = new THREE.MeshStandardMaterial({ color:0x14181c, metalness:0.55, roughness:0.35 });
+        const mSlide = new THREE.MeshStandardMaterial({ color:0x1e2428, metalness:0.75, roughness:0.22 });
+        const mAccent= new THREE.MeshStandardMaterial({ color:0x18e88a, emissive:0x18e88a, emissiveIntensity:1.4, metalness:0.1, roughness:0.3 }); // neon green / cyber teal accent strip
+        const mGrip  = new THREE.MeshStandardMaterial({ color:0x0a0d10, metalness:0.2, roughness:0.7 });
+
+        // Frame / body (runs along +Z = forward, barrel end at +Z)
+        M(new THREE.BoxGeometry(0.075, 0.11, 0.30), mBody, 0, 0.03, 0.05, root);
+        // Slide on top
+        M(new THREE.BoxGeometry(0.068, 0.05, 0.26), mSlide, 0, 0.095, 0.04, root);
+        // Barrel tip
+        M(new THREE.CylinderGeometry(0.024, 0.024, 0.06, 10), mSlide, 0, 0.095, 0.21, root).rotation.x = Math.PI/2;
+        // Grip (angled down-back, correct hand placement under the frame)
+        const grip = M(new THREE.BoxGeometry(0.070, 0.16, 0.075), mGrip, 0, -0.09, -0.07, root);
+        grip.rotation.x = -0.28;
+        // Trigger guard
+        M(new THREE.TorusGeometry(0.035, 0.008, 6, 12), mGrip, 0, -0.01, -0.02, root).rotation.x = Math.PI/2;
+        // Neon accent strip along the slide — Kael's signature colour identity
+        M(new THREE.BoxGeometry(0.010, 0.018, 0.20), mAccent, 0.040, 0.095, 0.03, root);
+
+        root.userData.isKaelPistol = true;
+        root.rotation.set(0, 0, 0);
+        root.position.set(0.03, -0.02, 0.06);
+        return root;
     }
 };
  
@@ -3693,6 +4140,7 @@ const WeaponAttachmentSystem = {
         if (weaponData === WEAPONS.CLEAVER) key = 'CLEAVER';
         if (weaponData === WEAPONS.FISTS)   key = 'FISTS';   // no model registered — hand stays empty (unarmed)
         if (weaponData === WEAPONS.FROST)   key = 'FROST';   // no model registered — bare ice technique, hand stays empty
+        if (weaponData === WEAPONS.KAEL_FISTS) key = 'KAEL_FISTS';   // no model registered — cyber-enhanced fists, hand stays empty
         const model = WeaponManager.weapons[key];
         if (model) hand.add(model);
         WeaponVisualController.activeWeaponKey = key;
@@ -4866,6 +5314,7 @@ const GameFlow = {
         uiLayer.style.pointerEvents = 'none';
         document.getElementById('dash-indicator').classList.remove('game-visible');
         document.getElementById('awakening-bar-wrap').classList.remove('game-visible');
+        document.getElementById('overclock-bar-wrap').classList.remove('game-visible');
         document.getElementById('ability-bar').classList.remove('game-visible');
         document.getElementById('wave-banner').classList.remove('show');
         document.getElementById('build-menu-overlay').classList.remove('open','visible');
@@ -4978,6 +5427,10 @@ function setupInputListeners() {
                 break;
             case 'KeyE':
                 if(currentCharacterId==='TOJI') swapWeapon(WEAPONS.SPEAR);
+                break;
+            case 'KeyR':
+                // "Only Kael can use R" — complete no-op for every other character
+                if(currentCharacterId==='KAEL') KaelOverclockSystem.tryActivate();
                 break;
         }
         // ── Dynamic keybind actions (all read from KEYBINDS — updates instantly on remap) ──
@@ -6060,12 +6513,12 @@ const SecretAwakeningController = {
     },
 
     _hideHUD() {
-        ['ui-layer', 'dash-indicator', 'awakening-bar-wrap', 'ability-bar'].forEach(id => {
+        ['ui-layer', 'dash-indicator', 'awakening-bar-wrap', 'overclock-bar-wrap', 'ability-bar'].forEach(id => {
             const el = document.getElementById(id); if (el) el.style.display = 'none';
         });
     },
       _showHUD() {
-        ['ui-layer', 'dash-indicator', 'awakening-bar-wrap', 'ability-bar'].forEach(id => {
+        ['ui-layer', 'dash-indicator', 'awakening-bar-wrap', 'overclock-bar-wrap', 'ability-bar'].forEach(id => {
             const el = document.getElementById(id); if (el) el.style.display = '';
         });
     },
@@ -6769,12 +7222,342 @@ const UraumeVFX = {
     }
 };
 
+// ════════════════════════════════════════════════════════
+// KAEL — OVERLOCK CHARGE / ACTIVATION / TIME-DISTORTION SYSTEM
+// Mirrors UraumeFreezeSystem's shape (its own independent, self-contained
+// module). Every entry point either checks currentCharacterId itself or is
+// only ever called from Kael-specific code paths (AbilitySystem._kael_*),
+// so it is a complete no-op for every other roster character.
+//
+// DESIGN NOTE (assumption, flagged for the dev to confirm/adjust): the brief
+// specifies the +2%/0.2s regen and the ">5% to activate" gate, but doesn't
+// specify how long Overlock lasts once active or whether it drains. This
+// implementation converts the charge spent on activation directly into
+// Overlock duration at 100ms per 1% (so a full 100% charge = 10s Overlock,
+// a bare 5% activation = 0.5s) — charge is fully consumed on activation.
+// KAEL_OVERCLOCK_DURATION_MS_PER_PCT is the single knob to retune this.
+// ════════════════════════════════════════════════════════
+const KAEL_OVERCLOCK_REGEN_INTERVAL_MS = 200;   // "every 0.2 seconds"
+const KAEL_OVERCLOCK_REGEN_PCT         = 2;     // "+2% Overclock charge"
+const KAEL_OVERCLOCK_ACTIVATE_THRESHOLD= 5;     // "above 5%, NOT full charge"
+const KAEL_OVERCLOCK_ACTIVATION_MS     = 1200;  // full-screen activation sequence length (gif+audio)
+const KAEL_OVERCLOCK_DURATION_MS_PER_PCT = 100; // see DESIGN NOTE above
+
+const KAEL_OVERCLOCK_STATE = {
+    charge: 30,             // 0–100
+    phase: 'idle',          // 'idle' | 'activating' | 'active'
+    lastRegenTick: 0,
+    activeEndTime: 0,
+    lastTrailSpawn: 0
+};
+
+const KaelOverclockSystem = {
+    isActive() { return KAEL_OVERCLOCK_STATE.phase === 'active'; },
+    isActivating() { return KAEL_OVERCLOCK_STATE.phase === 'activating'; },
+    inputLocked() { return KAEL_OVERCLOCK_STATE.phase === 'activating'; },
+
+    onCharacterChange(charId) {
+        const wrap = document.getElementById('overclock-bar-wrap');
+        if (wrap) wrap.classList.toggle('kael-visible', charId === 'KAEL');
+        if (charId !== 'KAEL') {
+            // Leaving Kael mid-Overlock — clean up fully so no state bleeds into the next character
+            this._forceEnd();
+        }
+        this._refreshMeterUI();
+    },
+
+    // ── Regen: outside combat, +2% every 0.2s ─────────────
+    update(delta, now) {
+        if (currentCharacterId !== 'KAEL') return;
+
+        // Active-duration countdown
+        if (this.isActive() && now >= KAEL_OVERCLOCK_STATE.activeEndTime) {
+            this._endActive();
+        }
+
+        // Continuous RGB afterimage trail while Overlock is active and Kael is moving
+        if (this.isActive()) {
+            const moving = GAME_STATE.input.forward || GAME_STATE.input.backward ||
+                           GAME_STATE.input.left || GAME_STATE.input.right || GAME_STATE.player.isDashing;
+            const awakened = (typeof AwakeningController !== 'undefined' && AwakeningController.isActive());
+            const trailInterval = awakened ? 28 : 55;   // more RGB afterimages while Cyber Limit Break is active
+            if (moving && now - KAEL_OVERCLOCK_STATE.lastTrailSpawn > trailInterval) {
+                KAEL_OVERCLOCK_STATE.lastTrailSpawn = now;
+                this._spawnAfterimage();
+            }
+        }
+
+        // Regen only "outside combat" — approximated as: Overlock not active/activating,
+        // and no attack/ability thrown in the last 2s.
+        const outsideCombat = KAEL_OVERCLOCK_STATE.phase === 'idle' &&
+            (now - (GAME_STATE.player.lastAttackTime||0) > 2000);
+        if (!KAEL_OVERCLOCK_STATE.lastRegenTick) KAEL_OVERCLOCK_STATE.lastRegenTick = now;
+        if (outsideCombat && now - KAEL_OVERCLOCK_STATE.lastRegenTick >= KAEL_OVERCLOCK_REGEN_INTERVAL_MS) {
+            KAEL_OVERCLOCK_STATE.lastRegenTick = now;
+            KAEL_OVERCLOCK_STATE.charge = Math.min(100, KAEL_OVERCLOCK_STATE.charge + KAEL_OVERCLOCK_REGEN_PCT);
+            this._refreshMeterUI();
+        } else if (!outsideCombat) {
+            KAEL_OVERCLOCK_STATE.lastRegenTick = now;   // hold the timer at "now" so combat doesn't bank partial ticks
+        }
+    },
+
+    // ── Activation (R key, Kael-only, handled in setupInputListeners) ──
+    tryActivate() {
+        if (!gameStarted || currentCharacterId !== 'KAEL') return;
+        if (KAEL_OVERCLOCK_STATE.phase !== 'idle') return;
+        if (KAEL_OVERCLOCK_STATE.charge <= KAEL_OVERCLOCK_ACTIVATE_THRESHOLD) return;
+        this._startActivation();
+    },
+
+    _startActivation() {
+        const s = KAEL_OVERCLOCK_STATE;
+        s.phase = 'activating';
+        // Awakening bonus: Cyber Limit Break makes Overlock activation near-instant
+        const awakened = (typeof AwakeningController !== 'undefined' && AwakeningController.isActive() && currentCharacterId === 'KAEL');
+        const activationMs = awakened ? Math.round(KAEL_OVERCLOCK_ACTIVATION_MS * 0.4) : KAEL_OVERCLOCK_ACTIVATION_MS;
+
+        // 1–3: full-screen kaelactivation.gif (a real, continuously-playing
+        // animation — never a frozen single frame) + kaelactivation.mp4 audio,
+        // both driven from KAEL_ASSETS so they stay swappable.
+        const overlay = document.getElementById('kael-activation-overlay');
+        const gifEl   = document.getElementById('kael-activation-gif');
+        const audioEl = document.getElementById('kael-activation-audio');
+        if (gifEl) {
+            // Force-reload so the GIF restarts from frame 0 and plays through, every activation
+            gifEl.src = '';
+            gifEl.src = KAEL_ASSETS.activationGif + '?t=' + Date.now();
+        }
+        if (overlay) overlay.classList.add('active');
+        if (audioEl) {
+            audioEl.src = KAEL_ASSETS.activationAudioMp4;
+            audioEl.currentTime = 0;
+            audioEl.play().catch(()=>{});   // autoplay may be blocked until first user gesture; R press itself counts as one
+        }
+
+        // 4: after the activation sequence ends, hide the overlay and return to gameplay
+        setTimeout(() => {
+            if (overlay) overlay.classList.remove('active');
+            if (audioEl) audioEl.pause();
+            this._startActive();
+        }, activationMs);
+    },
+
+    _startActive() {
+        const s = KAEL_OVERCLOCK_STATE;
+        const spentPct = s.charge;
+        s.charge = 0;
+        s.phase = 'active';
+        const awakened = (typeof AwakeningController !== 'undefined' && AwakeningController.isActive() && currentCharacterId === 'KAEL');
+        // Awakening bonus: longer duration during Cyber Limit Break
+        const durationMs = Math.max(300, spentPct * KAEL_OVERCLOCK_DURATION_MS_PER_PCT * (awakened ? 1.6 : 1));
+        s.activeEndTime = performance.now() + durationMs;
+
+        // Screen: green cyber tint + time-distortion feel
+        const tint = document.getElementById('kael-overclock-tint');
+        if (tint) tint.classList.add('active');
+        document.querySelector('.player-panel')?.classList.add('kael-overclock-active');
+
+        // Enemies: cannot move, cannot attack, cannot damage Kael — AI paused
+        // (read by processEnemyAI's early-return guard)
+        GAME_STATE.kaelOverclockFreeze = true;
+
+        // Bullet time: existing/new bullets read KaelBulletSystem's slow flag
+        GAME_STATE.kaelBulletTime = true;
+
+        this._refreshMeterUI();
+        this._spawnAfterimage();
+    },
+
+    _endActive() {
+        const s = KAEL_OVERCLOCK_STATE;
+        s.phase = 'idle';
+        s.lastRegenTick = performance.now();
+        const tint = document.getElementById('kael-overclock-tint');
+        if (tint) tint.classList.remove('active');
+        document.querySelector('.player-panel')?.classList.remove('kael-overclock-active');
+        GAME_STATE.kaelOverclockFreeze = false;
+        GAME_STATE.kaelBulletTime = false;
+        this._refreshMeterUI();
+    },
+
+    // Hard reset — used when switching off Kael mid-Overlock
+    _forceEnd() {
+        const s = KAEL_OVERCLOCK_STATE;
+        if (s.phase === 'active') this._endActive();
+        s.phase = 'idle';
+        s.charge = Math.min(s.charge, 30);
+        const overlay = document.getElementById('kael-activation-overlay');
+        if (overlay) overlay.classList.remove('active');
+    },
+
+    // ── RGB speed afterimages — the Overlock identity. NOT a glow/aura on
+    // Kael himself; three cycling clone colours read as a red/green/blue trail. ──
+    _AFTERIMAGE_COLORS: [0xff3b5c, 0x39ff9c, 0x3ba0ff],
+    _afterimageIdx: 0,
+    burstAfterimages(count, intervalMs) {
+        for (let i = 0; i < count; i++) setTimeout(() => this._spawnAfterimage(), i * intervalMs);
+    },
+    _spawnAfterimage() {
+        if (!scene || !pMesh) return;
+        const color = this._AFTERIMAGE_COLORS[this._afterimageIdx % this._AFTERIMAGE_COLORS.length];
+        this._afterimageIdx++;
+        const clone = pMesh.clone(true);
+        clone.visible = true;
+        const mats = [];
+        clone.traverse(obj => {
+            if (obj.isMesh) {
+                const m = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.40, depthWrite: false });
+                obj.material = m; obj.castShadow = false;
+                mats.push(m);
+            }
+        });
+        scene.add(clone);
+        const t0 = performance.now(), dur = 240;
+        (function tick() {
+            const t = Math.min(1, (performance.now() - t0) / dur);
+            mats.forEach(m => { m.opacity = 0.40 * (1 - t); });
+            if (t < 1) requestAnimationFrame(tick);
+            else { scene.remove(clone); mats.forEach(m => m.dispose()); }
+        })();
+    },
+
+    // ── Meter UI ─────────────────────────────────────────
+    _refreshMeterUI() {
+        const s = KAEL_OVERCLOCK_STATE;
+        const fill = document.getElementById('overclock-meter-fill');
+        const txt  = document.getElementById('overclock-meter-text');
+        const wrap = document.getElementById('overclock-bar-wrap');
+        if (fill) fill.style.width = s.charge + '%';
+        if (txt)  txt.innerText = Math.round(s.charge) + '%';
+        // "When above 5%: show SYSTEM SYNCHRONIZED. When below 5%: hide message."
+        if (wrap) wrap.classList.toggle('overclock-synced', s.charge > KAEL_OVERCLOCK_ACTIVATE_THRESHOLD);
+    }
+};
+
+// ════════════════════════════════════════════════════════
+// KAEL — WEAPON VFX (pistol show/hide). The Overlock Sidearm is never a
+// persistent equipped weapon — it is attached to the hand bone only for the
+// duration of S2 (Heavy Caliber) / S4 (Bullet Tempest) and detached right after,
+// per the design brief ("Only appears during: S2, S4").
+// ════════════════════════════════════════════════════════
+const KaelWeaponVFX = {
+    showPistol() {
+        const hand = GAME_STATE.player.handBone;
+        const pistol = WeaponManager.weapons.KAEL_PISTOL;
+        if (!hand || !pistol) return;
+        if (!hand.children.includes(pistol)) hand.add(pistol);
+    },
+    hidePistol() {
+        const hand = GAME_STATE.player.handBone;
+        const pistol = WeaponManager.weapons.KAEL_PISTOL;
+        if (!hand || !pistol) return;
+        if (hand.children.includes(pistol)) hand.remove(pistol);
+    }
+};
+
+// ════════════════════════════════════════════════════════
+// KAEL — BULLET SYSTEM. Visible bullets, muzzle flash, smoke, impact VFX for
+// S2/S4. Speed reads KaelOverclockSystem.isActive(): NORMAL bullets are fast
+// and brief; OVERLOCK bullets are extremely slow and linger — not because
+// they're weaker, but because Kael is moving far faster than them.
+// ════════════════════════════════════════════════════════
+const KaelBulletSystem = {
+    _active: [],
+
+    fire(fromPos, toPos, slow) {
+        if (!scene) return;
+        this._spawnMuzzleFlash(fromPos);
+        this._spawnSmoke(fromPos);
+
+        const dir = new THREE.Vector3().subVectors(toPos, fromPos).normalize();
+        const awakened = (typeof AwakeningController !== 'undefined' && AwakeningController.isActive() && currentCharacterId === 'KAEL');
+        const speed = slow ? (awakened ? 1.6 : 3.2) : 46;   // "stronger slowdown" while Cyber Limit Break is active
+        const maxLife = slow ? (awakened ? 4200 : 2600) : 500;         // slow bullets "remain visible in the arena" much longer
+
+        const geo = new THREE.CylinderGeometry(0.035, 0.035, 0.30, 6);
+        const mat = new THREE.MeshBasicMaterial({ color: 0x39ff9c, transparent: true, opacity: 0.95 });
+        const bullet = new THREE.Mesh(geo, mat);
+        bullet.position.copy(fromPos);
+        bullet.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
+        scene.add(bullet);
+
+        const rec = { mesh: bullet, geo, mat, dir, speed, spawn: performance.now(), maxLife, impacted: false };
+        this._active.push(rec);
+    },
+
+    update(delta) {
+        for (let i = this._active.length - 1; i >= 0; i--) {
+            const b = this._active[i];
+            const age = performance.now() - b.spawn;
+            if (age >= b.maxLife) {
+                if (!b.impacted) this._spawnImpact(b.mesh.position.clone());
+                scene.remove(b.mesh); b.geo.dispose(); b.mat.dispose();
+                this._active.splice(i, 1);
+                continue;
+            }
+            b.mesh.position.addScaledVector(b.dir, b.speed * delta);
+        }
+    },
+
+    _spawnMuzzleFlash(pos) {
+        if (!scene) return;
+        const mat = new THREE.MeshBasicMaterial({ color: 0x9dffce, transparent: true, opacity: 0.9 });
+        const flash = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 6), mat);
+        flash.position.copy(pos);
+        scene.add(flash);
+        const t0 = performance.now(), dur = 90;
+        (function tick() {
+            const t = Math.min(1, (performance.now() - t0) / dur);
+            flash.scale.setScalar(1 + t * 1.6);
+            mat.opacity = 0.9 * (1 - t);
+            if (t < 1) requestAnimationFrame(tick);
+            else { scene.remove(flash); flash.geometry.dispose(); mat.dispose(); }
+        })();
+    },
+
+    _spawnSmoke(pos) {
+        if (!scene) return;
+        const mat = new THREE.MeshBasicMaterial({ color: 0xbfd8cc, transparent: true, opacity: 0.35 });
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(0.10, 6, 6), mat);
+        puff.position.copy(pos);
+        scene.add(puff);
+        const t0 = performance.now(), dur = 420;
+        (function tick() {
+            const t = Math.min(1, (performance.now() - t0) / dur);
+            puff.position.y += 0.004;
+            puff.scale.setScalar(1 + t * 2.2);
+            mat.opacity = 0.35 * (1 - t);
+            if (t < 1) requestAnimationFrame(tick);
+            else { scene.remove(puff); puff.geometry.dispose(); mat.dispose(); }
+        })();
+    },
+
+    _spawnImpact(pos) {
+        if (!scene) return;
+        const mat = new THREE.MeshBasicMaterial({ color: 0x39ff9c, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+        const ring = new THREE.Mesh(new THREE.RingGeometry(0.05, 0.16, 12), mat);
+        ring.position.copy(pos);
+        ring.lookAt(camera ? camera.position : pos.clone().add(new THREE.Vector3(0,0,1)));
+        scene.add(ring);
+        const t0 = performance.now(), dur = 220;
+        (function tick() {
+            const t = Math.min(1, (performance.now() - t0) / dur);
+            ring.scale.setScalar(1 + t * 3);
+            mat.opacity = 0.85 * (1 - t);
+            if (t < 1) requestAnimationFrame(tick);
+            else { scene.remove(ring); ring.geometry.dispose(); mat.dispose(); }
+        })();
+    }
+};
+
 function applyDamageToPlayer(dmgOverride, attackerEntry) {
     if(GAME_STATE.player.hp<=0||GAME_STATE.player.isDashing) return;
     // Hyperarmor: invulnerable during awakening animation
     if(AwakeningController.inputLocked()) return;
     // Secret Awakening: brief invulnerability the instant Domain gameplay resumes
     if(performance.now() < SECRET_AWAKENING_STATE.domainGraceUntil) return;
+    // Kael Overlock: "Enemies... Cannot damage Kael" while active
+    if(GAME_STATE.kaelOverclockFreeze) return;
     const baseDmg = (dmgOverride !== undefined) ? dmgOverride : GAME_STATE.enemy.damage;
     const incomingDmg=Math.round(baseDmg*AwakeningController.getDamageReceiveMul()*GAME_STATE.player.damageTakenMul);
     GAME_STATE.player.hp=Math.max(0,GAME_STATE.player.hp-incomingDmg);
@@ -6873,6 +7656,8 @@ function runGameLoop(timestamp) {
         NaoyaVFX.update(now);
         UraumeFreezeSystem.update(now, delta);
         UraumeVFX.updateHairSway(now);
+        KaelOverclockSystem.update(delta, now);
+        KaelBulletSystem.update(delta);
         processCameraPhysics(delta);
  
         // Passive HP regen perks
@@ -6922,7 +7707,7 @@ function updateWalkAnimation(delta,now) {
         const prog=(now-GAME_STATE.player.attackStartTime)/wDur;
         if(prog<1.0){
             // ── Resolve this hit's animation definition ──
-            const animKey = wep===WEAPONS.KATANA ? 'KATANA' : wep===WEAPONS.CLEAVER ? 'CLEAVER' : wep===WEAPONS.FISTS ? 'FISTS' : wep===WEAPONS.FROST ? 'FROST' : 'SPEAR';
+            const animKey = wep===WEAPONS.KATANA ? 'KATANA' : wep===WEAPONS.CLEAVER ? 'CLEAVER' : (wep===WEAPONS.FISTS || wep===WEAPONS.KAEL_FISTS) ? 'FISTS' : wep===WEAPONS.FROST ? 'FROST' : 'SPEAR';
             const hitIdx  = Math.max(0, (combatFX.activeM1Step||1) - 1);
             const h       = ANIM_MAP[animKey][hitIdx];
  
@@ -7008,6 +7793,9 @@ function processEnemyAI(entry,delta,now) {
 
     // ── Secret Awakening: world freezes through the transformation AND the Domain reveal ──
     if(SecretAwakeningController.isLocking()) return;
+
+    // ── Kael Overlock: enemies cannot move, attack, or damage Kael — AI fully paused ──
+    if(GAME_STATE.kaelOverclockFreeze) return;
 
     // ── Naoya Bleed (Zenin Edge, S3) — stackable DoT, ticks independently of Projection ──
     if(state.bleedStacks>0){
