@@ -521,6 +521,76 @@
         }
         #kael-finalflash-layer.flash { opacity:1; transition:opacity 0.12s ease-out; }
 
+        /* ── REN — MONARCH'S AWAKENING cinematic overlay. Purely visual: black
+             fade + RGB glitch + level-up video beat + shadow-particle reveal +
+             awakening video beat. Modular / additive — only ever shown by
+             AwakeningController during Ren's 'ren' cutsceneType, complete
+             no-op for every other character. Video sources come from
+             REN_AWAKENING_ASSETS (editable, see near KAEL_ASSETS). ── */
+        #ren-awakening-cutscene {
+            position:fixed; inset:0; z-index:9600;
+            display:none; align-items:center; justify-content:center;
+            background:#000; opacity:0; pointer-events:none;
+            transition:opacity 0.6s ease;
+        }
+        #ren-awakening-cutscene.active { display:flex; }
+        #ren-awakening-cutscene.fade-in { opacity:1; }
+        #ren-cutscene-video {
+            width:100%; height:100%; object-fit:cover;
+            opacity:0; transition:opacity 0.15s linear;
+        }
+        #ren-cutscene-video.show { opacity:1; }
+        #ren-glitch-layer {
+            position:absolute; inset:0; pointer-events:none; opacity:0;
+            mix-blend-mode:screen;
+            background:
+                repeating-linear-gradient(0deg, rgba(138,79,214,0.38) 0px, rgba(138,79,214,0.38) 2px, transparent 2px, transparent 4px),
+                repeating-linear-gradient(90deg, rgba(60,20,100,0.30) 0px, rgba(60,20,100,0.30) 1px, transparent 1px, transparent 3px);
+            background-size:100% 6px, 6px 100%;
+        }
+        #ren-glitch-layer.burst { opacity:1; animation:ren-glitch-jitter 0.11s steps(2,end) infinite; }
+        @keyframes ren-glitch-jitter {
+            0%   { transform:translate(0,0); filter:hue-rotate(0deg); }
+            25%  { transform:translate(-7px,2px); filter:hue-rotate(-40deg); }
+            50%  { transform:translate(5px,-4px); filter:hue-rotate(30deg); }
+            75%  { transform:translate(-4px,-2px); filter:hue-rotate(-55deg); }
+            100% { transform:translate(0,0); filter:hue-rotate(0deg); }
+        }
+        #ren-levelup-text {
+            position:absolute; inset:0; display:flex; flex-direction:column;
+            align-items:center; justify-content:center; pointer-events:none; opacity:0;
+        }
+        #ren-levelup-text.show { opacity:1; }
+        #ren-levelup-text .ren-levelup-line {
+            font-size:42px; font-weight:900; letter-spacing:6px; color:#c9a8ff;
+            text-shadow:0 0 18px rgba(138,79,214,0.9), 0 0 40px rgba(60,20,100,0.7);
+            opacity:0; margin:2px 0;
+        }
+        #ren-levelup-text .ren-levelup-line.pop { animation:ren-levelup-pop 0.4s ease-out forwards; }
+        @keyframes ren-levelup-pop {
+            0%   { opacity:0; transform:scale(1.4); filter:blur(6px); }
+            60%  { opacity:1; transform:scale(0.96); filter:blur(0); }
+            100% { opacity:1; transform:scale(1); }
+        }
+        #ren-level-transition {
+            font-size:64px; font-weight:900; letter-spacing:4px; color:#fff;
+            text-shadow:0 0 24px rgba(138,79,214,1);
+            opacity:0; margin-top:10px;
+        }
+        #ren-level-transition.show { opacity:1; animation:ren-glitch-jitter 0.09s steps(2,end) infinite; }
+        #ren-arise-text {
+            position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+            font-size:56px; font-weight:900; letter-spacing:12px; color:#8a4fd6;
+            text-shadow:0 0 30px rgba(138,79,214,1), 0 0 60px rgba(60,20,100,0.8);
+            opacity:0; pointer-events:none;
+        }
+        #ren-arise-text.show { opacity:1; transition:opacity 1.1s ease-in; }
+        .ren-arise-particle {
+            position:absolute; width:4px; height:4px; border-radius:50%;
+            background:#8a4fd6; box-shadow:0 0 8px 2px rgba(138,79,214,0.9);
+            pointer-events:none; opacity:0;
+        }
+
         /* ── Uraume Freeze Meter — only rendered while an enemy has freeze buildup ── */
         .freeze-meter-bar {
             position:absolute; width:48px; height:5px;
@@ -980,6 +1050,24 @@
     <div id="kael-glitch-layer"></div>
     <div id="kael-finalflash-layer"></div>
 </div>
+
+<!-- ── REN — MONARCH'S AWAKENING cinematic awakening cutscene. Purely visual:
+     black fade + RGB glitch + level-up video beat + shadow-particle reveal +
+     awakening video beat. Modular / additive: only ever shown by
+     AwakeningController during Ren's 'ren' cutsceneType, complete no-op for
+     every other character. Video sources are editable — see REN_AWAKENING_ASSETS. ── -->
+<div id="ren-awakening-cutscene">
+    <video id="ren-cutscene-video" src="" muted playsinline></video>
+    <div id="ren-glitch-layer"></div>
+    <div id="ren-levelup-text">
+        <div class="ren-levelup-line">LEVEL UP</div>
+        <div class="ren-levelup-line">LEVEL UP</div>
+        <div class="ren-levelup-line">LEVEL UP</div>
+        <div id="ren-level-transition"></div>
+    </div>
+    <div id="ren-arise-particles"></div>
+    <div id="ren-arise-text">ARISE</div>
+</div>
  
 <!-- ── TITLE SCREEN ── -->
 <div id="title-screen">
@@ -1210,6 +1298,39 @@ const KAEL_MEMORY_END     = KAEL_MEMORY_START + KAEL_MEMORY_SEQUENCE.length * KA
 const KAEL_FLASH_MS       = 200;   // final flash/glitch
 const KAEL_FLASH_END      = KAEL_MEMORY_END + KAEL_FLASH_MS;   // 3800
 const KAEL_CUTSCENE_END   = KAEL_FLASH_END + KAEL_ZOOM_MS;     // 4400 — gameplay resumes, duration timer starts
+
+// ════════════════════════════════════════════════════════
+// REN_AWAKENING_ASSETS — single reference point for every Ren cutscene file.
+// Point these at your own video files; nothing else in the codebase should
+// hardcode a filename directly. fromLevel/toLevel drive the on-screen
+// "N → N" transition text during the level-up beat.
+// ════════════════════════════════════════════════════════
+const REN_AWAKENING_ASSETS = {
+    levelUpVideo:   'ren-levelup.mp4',      // [EDITABLE] plays during the LEVEL UP / N→N beat
+    awakeningVideo: 'ren-awakening.mp4',    // [EDITABLE] plays during the final shadow-reveal beat
+    fromLevel: 99,                          // [EDITABLE]
+    toLevel:   100                          // [EDITABLE]
+};
+
+// ── REN — MONARCH'S AWAKENING cutscene timeline (ms, elapsed since
+//    cutsceneStart). Single source of truth read by AwakeningController's
+//    update()/overrideCamera() for the 'ren' cutsceneType. Purely visual
+//    timing — none of this affects the awakening duration timer, which only
+//    starts once _startActive() runs at REN_CUTSCENE_END. ──
+const REN_ZOOM_MS         = 700;    // intro zoom-in / outro zoom-out length
+const REN_GLITCH1_MS      = 500;    // RGB glitch before the level-up video
+const REN_LEVELUP_START   = REN_ZOOM_MS + REN_GLITCH1_MS;             // 1200
+const REN_LEVELUP_MS      = 2600;   // level-up video + LEVEL UP / N→N text on screen
+const REN_LEVELUP_END     = REN_LEVELUP_START + REN_LEVELUP_MS;       // 3800
+const REN_GLITCH2_MS      = 450;    // final glitch after the level-up beat
+const REN_GLITCH2_END     = REN_LEVELUP_END + REN_GLITCH2_MS;         // 4250
+const REN_BLACK_MS        = 500;    // full black hold
+const REN_BLACK_END       = REN_GLITCH2_END + REN_BLACK_MS;           // 4750
+const REN_ARISE_MS        = 1400;   // shadow particles building, dark energy forming
+const REN_ARISE_END       = REN_BLACK_END + REN_ARISE_MS;             // 6150
+const REN_AWAKEN_VIDEO_MS = 2600;   // awakening reveal video + aura fade-in
+const REN_VIDEO_END       = REN_ARISE_END + REN_AWAKEN_VIDEO_MS;      // 8750
+const REN_CUTSCENE_END    = REN_VIDEO_END + REN_ZOOM_MS;              // 9450 — gameplay resumes, duration timer starts
 const CharacterData = {
     TOJI: {
         id:'TOJI',
@@ -1387,6 +1508,66 @@ const CharacterData = {
         color:'#2f6f4e'
     },
  
+    // ════════════════════════════════════════════════════════
+    // REN — "SHADOW COMMANDER" (original character, own slot).
+    // Every field below marked editable is a plain data value with no
+    // gameplay logic hardcoded to it — rename freely, nothing else in the
+    // codebase reads these strings directly. See WEAPONS.DAGGER_L/DAGGER_R,
+    // AbilitySystem._DEFS_REN, and REN_ASSETS/REN_AWAKENING_CONFIG (added in
+    // later phases) for the rest of the kit.
+    // ════════════════════════════════════════════════════════
+    REN: {
+        id:'REN',
+        name:'Ren Kurogane',                 // [EDITABLE] Character Name
+        title:'The Shadow Commander',        // [EDITABLE] Character Title
+        role:'Shadow Commander',
+        difficulty:'Hard',
+        stars:4,
+        combatStyle:'Fast Assassin / Shadow Commander',   // [EDITABLE] Playstyle
+        description:'A fast, precise dual-dagger assassin who commands an army of shadows raised from fallen enemies.', // [EDITABLE] Description
+        strengths:['Highest Mobility','Rapid Multi-Hit Damage','Scales With Shadow Army','Strong Late-Run Snowball'],
+        weaknesses:['Lower Per-Hit Damage','Shadow Army Needs Building Up','Vulnerable Early In A Run'],
+        weapons:['Left Dagger','Right Dagger'],
+        image:'ren.jpeg',        // [EDITABLE] portrait asset — swap in your own file
+        playable:true,
+        color:'#7a3fbf',
+        // ── Ability display names — [EDITABLE], read by AbilitySystem._DEFS_REN (Phase 2) ──
+        abilityNames: {
+            S1:'Shadow Flurry',      // [EDITABLE] Ability 1 — dual dagger multi-hit
+            S2:'Shadow Step',        // [EDITABLE] Ability 2 — shadow dash/teleport
+            S3:'Shadow Mark',        // [EDITABLE] Ability 3 — mark for increased damage (name fixed per design brief)
+            S4:'Arise'               // [EDITABLE] Ability 4 — shadow army ultimate
+        },
+        awakening: {
+            name:'Monarch\'s Awakening',   // [EDITABLE] Awakening Name
+            description:'Ren\'s shadow drops the last of its restraint — daggers, army, and every cooldown answer faster to a monarch fully unleashed.', // [EDITABLE]
+            duration: 28,
+            buffs: {
+                damageMultiplier: 1.40,
+                speedMultiplier: 1.30,
+                attackSpeedMultiplier: 1.35,
+                cooldownReduction: 0.75,     // lower = faster cooldowns
+                shadowDamageMultiplier: 1.30,     // buffs shadow-army units, consumed in Phase 3
+                shadowAttackSpeedMultiplier: 1.25 // buffs shadow-army units, consumed in Phase 3
+            }
+        },
+        // ── Arise ultimate — fixed 3-charge resource, consumed by the ability
+        // system in Phase 2/3, not by anything in Phase 1. ──
+        ariseCharges: { max: 3, current: 3 },   // [EDITABLE] max charges
+        // ── Shadow army config — consumed by the (not-yet-built) ShadowArmySystem.
+        // Present here now so the whole kit's tunables live in one place. ──
+        shadowArmy: {
+            maxShadows: 50,   // [EDITABLE] Shadow Army Capacity
+            shadowClassChances: {   // [EDITABLE] weighted %, should sum to 100
+                SOLDIER:  70,
+                GUARD:    15,
+                ASSASSIN: 10,
+                ARCHER:    4,
+                ELITE:     1
+            }
+        }
+    },
+
     UNKNOWN: {
         id:'YUTA',
         name:'???',
@@ -1596,6 +1777,10 @@ const MenuUI = {
                 KAEL_OVERCLOCK_STATE.lastRegenTick = 0;
                 KaelOverclockSystem.onCharacterChange(currentCharacterId);
             }
+
+            // Ren — fresh Arise charges + empty shadow army each run
+            if (typeof RenAriseSystem !== 'undefined') RenAriseSystem.resetForNewRun();
+            if (typeof ShadowArmySystem !== 'undefined') ShadowArmySystem.clearAll();
         });
     }
 };
@@ -1853,6 +2038,17 @@ function _applyCharacterConfig(charId) {
             awakeningLabel: 'CYBER LIMIT BREAK', awakeningColor: '#00ffc8',
             cutsceneType: 'kael'   // no cinematic, no camera cut — see AwakeningController._startCutscene
         });
+    } else if(charId === 'REN'){
+        // Pulls damage/speed/duration straight from CharacterData.REN.awakening
+        // so renaming/retuning the awakening in the editable character-data
+        // block updates the actual buffs too — nothing here is a second copy.
+        const A = CharacterData.REN.awakening;
+        AwakeningController.setConfig({
+            displayName: A.name, damageMul: A.buffs.damageMultiplier, damageReceiveMul: 0.85,
+            speedMul: A.buffs.speedMultiplier, meterGain: 8, activeDuration: A.duration * 1000,
+            awakeningLabel: A.name, awakeningColor: '#8a4fd6',
+            cutsceneType: 'ren'   // drives Ren's LEVEL UP / glitch / shadow-reveal cutscene
+        });
     } else {
         // Toji (default)
         AwakeningController.setConfig({
@@ -1866,10 +2062,10 @@ function _applyCharacterConfig(charId) {
     AbilitySystem.setCharacter(charId);
 
     // Weapon
-    const startWep = (charId === 'NANAMI') ? WEAPONS.CLEAVER : (charId === 'NAOYA') ? WEAPONS.FISTS : (charId === 'URAUME') ? WEAPONS.FROST : (charId === 'KAEL') ? WEAPONS.KAEL_FISTS : WEAPONS.KATANA;
+    const startWep = (charId === 'NANAMI') ? WEAPONS.CLEAVER : (charId === 'NAOYA') ? WEAPONS.FISTS : (charId === 'URAUME') ? WEAPONS.FROST : (charId === 'KAEL') ? WEAPONS.KAEL_FISTS : (charId === 'REN') ? WEAPONS.DAGGER_R : WEAPONS.KATANA;
     GAME_STATE.player.currentWeapon = startWep;
     const wepNameEl = document.getElementById('current-weapon-name');
-    if(wepNameEl) wepNameEl.innerText = startWep.name;
+    if(wepNameEl) wepNameEl.innerText = (charId === 'REN') ? 'Dual Daggers' : startWep.name;
 
     // Model recolour — match reference image for each character
     const rm = GAME_STATE.player.rigMaterials;
@@ -1912,6 +2108,15 @@ function _applyCharacterConfig(charId) {
         if(rm.hr) rm.hr.color.setHex(0x5a4a3c);   // brown-grey hair
         if(rm.sh) rm.sh.color.setHex(0xd8dade);   // light grey/white sneakers
         rm.sw.roughness = 0.55;   // synthetic hi-vis fabric reads glossier than Toji's matte jacket
+    } else if(rm && charId === 'REN'){
+        // Reference: long black hooded coat over a white tee, dark trousers,
+        // near-black messy hair, dark boots — desaturated, shadow-commander palette.
+        if(rm.sw) rm.sw.color.setHex(0x121216);   // long black coat
+        if(rm.pt) rm.pt.color.setHex(0x16161a);   // dark trousers
+        if(rm.sk) rm.sk.color.setHex(0xe0b891);   // skin tone
+        if(rm.hr) rm.hr.color.setHex(0x0a0a0d);   // near-black hair
+        if(rm.sh) rm.sh.color.setHex(0x0d0d10);   // dark boots
+        rm.sw.roughness = 0.68;   // coat fabric, less matte than Toji's jacket
     } else if(rm){
         // Toji — reset to original dark colours
         if(rm.sw) rm.sw.color.setHex(0x080808);
@@ -1929,6 +2134,7 @@ function _applyCharacterConfig(charId) {
         if(charId === 'NAOYA') pMesh.scale.set(0.94, 1.04, 0.94);
         else if(charId === 'URAUME') pMesh.scale.set(0.92, 1.08, 0.90);   // tall, slim, elegant
         else if(charId === 'KAEL') pMesh.scale.set(0.97, 1.03, 0.97);     // athletic, slightly leaner than Toji
+        else if(charId === 'REN') pMesh.scale.set(0.95, 1.03, 0.95);      // lean assassin build
         else pMesh.scale.set(1, 1, 1);
     }
 
@@ -1956,7 +2162,7 @@ function _applyCharacterConfig(charId) {
     const ctrlEl = document.getElementById('controls-overlay');
     if(ctrlEl){
         const qeHint = ctrlEl.querySelector('.ctrl-swap');
-        if(qeHint) qeHint.style.display = (charId==='NANAMI' || charId==='NAOYA' || charId==='URAUME' || charId==='KAEL') ? 'none' : '';
+        if(qeHint) qeHint.style.display = (charId==='NANAMI' || charId==='NAOYA' || charId==='URAUME' || charId==='KAEL' || charId==='REN') ? 'none' : '';
         const kaelHint = ctrlEl.querySelector('.ctrl-kael-overlock');
         if(kaelHint) kaelHint.style.display = (charId==='KAEL') ? '' : 'none';
     }
@@ -1995,7 +2201,16 @@ const WEAPONS = {
     // brief it only appears during S2 (Heavy Caliber) and S4 (Bullet Tempest),
     // shown/hidden by KaelWeaponVFX.showPistol()/hidePistol().
     KAEL_PISTOL: { name:"Overlock Sidearm",      damage:9,  range:16,  attackSpeed:140, knockback:3,  special:"pistol",
-               hitstopDur:40,  shakeMag:0.10, arcForward:0, arcAngle:0 }
+               hitstopDur:40,  shakeMag:0.10, arcForward:0, arcAngle:0 },
+    // ── REN — dual daggers. Two separate weapon entries (one per hand) so each
+    // side can be modeled/swapped independently later; M1 alternates hits between
+    // them (see executeAttackPipeline's REN case). Low per-hit damage, very fast
+    // attackSpeed/hitstop — this is the "fast assassin" archetype, not a tank.
+    // All values below are the editable defaults; tune freely per-character.
+    DAGGER_L: { name:"Left Dagger",   damage:9,  range:2.6, attackSpeed:170, knockback:3, special:"shadow",
+               hitstopDur:35,  shakeMag:0.10, arcForward:0.16, arcAngle:0.85 },
+    DAGGER_R: { name:"Right Dagger",  damage:9,  range:2.6, attackSpeed:170, knockback:3, special:"shadow",
+               hitstopDur:35,  shakeMag:0.10, arcForward:0.16, arcAngle:0.85 }
 };
 const GAME_STATE = {
     player: {
@@ -2006,7 +2221,7 @@ const GAME_STATE = {
         lastAttackTime:0, lastDashTime:0,
         dashCooldown:1200, isDashing:false, dashEndTime:0, abilityLocomotionLock:false,
         dashDir: new THREE.Vector3(),
-        handBone:null, rig:null,
+        handBone:null, leftHandBone:null, rig:null,
         walkTime:0, isAttacking:false, attackStartTime:0,
         attackCooldownMs:0,
  
@@ -2230,6 +2445,25 @@ const AwakeningController = {
             }
             return;
         }
+        if (this._cfg.cutsceneType === 'ren') {
+            // Ren: Monarch's Awakening cinematic — freeze gameplay, zoom in, fade to
+            // black, RGB glitch, level-up video beat, shadow-particle reveal,
+            // awakening video beat, zoom out, resume. Timing driven from update()'s
+            // 'ren' branch below and the REN_* constants; the awakening duration
+            // timer only starts once _startActive() runs at REN_CUTSCENE_END.
+            s.renLevelUpShown = false;
+            s.renGlitch2Done = false;
+            s.renAriseParticlesSpawned = false;
+            s.renVideoStarted = false;
+            GAME_STATE.awakeningCutsceneFreeze = true;   // pauses enemies/projectiles/timers, same hook Kael's cutscene uses
+            const overlay = document.getElementById('ren-awakening-cutscene');
+            if (overlay) {
+                overlay.classList.add('active');
+                void overlay.offsetWidth;   // force reflow so the fade-in transition actually plays
+                overlay.classList.add('fade-in');
+            }
+            return;
+        }
         // Toji: hide player for cinematic
         if(pMesh) pMesh.visible = false;
     },
@@ -2280,6 +2514,43 @@ const AwakeningController = {
         }
     },
  
+    // ── Ren — ARISE moment particles (DOM-based since the overlay is opaque
+    // and hides the 3D scene at this point in the cutscene). Small violet
+    // motes drift upward and fade, giving the "shadow particles forming /
+    // dark energy building" beat called out in the design brief. ──
+    _renAriseParticleEls: [],
+    _spawnRenAriseParticles() {
+        const host = document.getElementById('ren-arise-particles');
+        if (!host) return;
+        this._clearRenAriseParticles();
+        const COUNT = 36;   // [EDITABLE] particle count
+        for (let i = 0; i < COUNT; i++) {
+            const el = document.createElement('div');
+            el.className = 'ren-arise-particle';
+            const startX = 50 + (Math.random()*60 - 30);
+            const startY = 60 + Math.random()*30;
+            el.style.left = startX + '%';
+            el.style.top = startY + '%';
+            host.appendChild(el);
+            const delay = Math.random() * 900;
+            const dur = 900 + Math.random() * 600;
+            const drift = (Math.random() - 0.5) * 12;
+            setTimeout(() => {
+                el.style.transition = `transform ${dur}ms ease-out, opacity ${dur}ms ease-out`;
+                el.style.opacity = '1';
+                requestAnimationFrame(() => {
+                    el.style.transform = `translate(${drift}vw, -34vh) scale(${1 + Math.random()})`;
+                    el.style.opacity = '0';
+                });
+            }, delay);
+            this._renAriseParticleEls.push(el);
+        }
+    },
+    _clearRenAriseParticles() {
+        this._renAriseParticleEls.forEach(el => el.remove());
+        this._renAriseParticleEls = [];
+    },
+
     // ── Activate passives ────────────────────────────────
     _startActive() {
         const s = TOJI_AWAKENING_STATE;
@@ -2310,6 +2581,19 @@ const AwakeningController = {
             GAME_STATE.player.attackSpeedMul = 0.60;   // -40% cooldown = +40% attack speed
             GAME_STATE.player.attackCooldownMs = WEAPONS.KAEL_FISTS.attackSpeed * 0.60;
             document.querySelector('.player-panel')?.classList.add('kael-limitbreak-active');
+        }
+        // Ren: Monarch's Awakening — faster dagger cadence (reuses the same
+        // attackSpeedMul hook) + dark shadow aura. Shadow-army damage/attack-speed
+        // buffs are read directly from CharacterData.REN.awakening.buffs by
+        // ShadowArmySystem (checks AwakeningController.isActive() itself).
+        if (this._cfg.cutsceneType === 'ren') {
+            const buffs = CharacterData.REN.awakening.buffs;
+            s.naoyaOrigAttackSpeedMul = GAME_STATE.player.attackSpeedMul;
+            s.naoyaOrigAttackCooldownMs = GAME_STATE.player.attackCooldownMs || 0;
+            const atkMul = 1 / (buffs.attackSpeedMultiplier || 1.35);
+            GAME_STATE.player.attackSpeedMul = atkMul;
+            GAME_STATE.player.attackCooldownMs = (WEAPONS.DAGGER_R.attackSpeed || 170) * atkMul;
+            if (typeof RenShadowAura !== 'undefined') RenShadowAura.start();
         }
         // Damage & durability buffs live in getDamageMul / getDamageReceiveMul
         // Remove black hole if still present (Toji only)
@@ -2350,6 +2634,12 @@ const AwakeningController = {
                 if (tint) tint.classList.remove('active');
             }
         }
+        // Ren: restore normal dagger cadence + clear the shadow aura
+        if (this._cfg.cutsceneType === 'ren') {
+            GAME_STATE.player.attackSpeedMul = s.naoyaOrigAttackSpeedMul !== undefined ? s.naoyaOrigAttackSpeedMul : 1.0;
+            GAME_STATE.player.attackCooldownMs = s.naoyaOrigAttackCooldownMs || 0;
+            if (typeof RenShadowAura !== 'undefined') RenShadowAura.stop();
+        }
         // Uraume: disarm the S1 upgrade + stop falling snow
         if (this._cfg.cutsceneType === 'uraume') {
             s.uraumeS1Ready = false;
@@ -2386,6 +2676,31 @@ const AwakeningController = {
             // Outro: zoom back out as gameplay resumes
             if (el < KAEL_CUTSCENE_END) {
                 const t = (el - KAEL_FLASH_END) / (KAEL_CUTSCENE_END - KAEL_FLASH_END);
+                const fwd = new THREE.Vector3(Math.sin(GAME_STATE.player.rotation), 0, Math.cos(GAME_STATE.player.rotation));
+                const camPos = pMesh.position.clone().sub(fwd.multiplyScalar(1.8 + t*3.2)).add(new THREE.Vector3(0, 2.0 + t*0.6, 0));
+                camera.position.lerp(camPos, 6*delta);
+                camera.lookAt(pMesh.position.clone().add(new THREE.Vector3(0, 1.8, 0)));
+                return true;
+            }
+            return false;   // cutscene fully ended — processCameraPhysics snaps back naturally
+        }
+        if(this._cfg.cutsceneType === 'ren') {
+            const el = performance.now() - TOJI_AWAKENING_STATE.cutsceneStart;
+            // Intro: zoom the camera into the character as the screen fades to black
+            if (el < REN_ZOOM_MS) {
+                const t = el / REN_ZOOM_MS;
+                const fwd = new THREE.Vector3(Math.sin(GAME_STATE.player.rotation), 0, Math.cos(GAME_STATE.player.rotation));
+                const camPos = pMesh.position.clone().sub(fwd.multiplyScalar(5.0 - t*3.2)).add(new THREE.Vector3(0, 2.6 - t*0.6, 0));
+                camera.position.lerp(camPos, 8*delta);
+                camera.lookAt(pMesh.position.clone().add(new THREE.Vector3(0, 1.8, 0)));
+                return true;
+            }
+            // Glitch → level-up video → glitch → black → arise particles → reveal video:
+            // screen is fully covered by the overlay — hold camera in place
+            if (el < REN_VIDEO_END) return true;
+            // Outro: zoom back out as gameplay resumes
+            if (el < REN_CUTSCENE_END) {
+                const t = (el - REN_VIDEO_END) / (REN_CUTSCENE_END - REN_VIDEO_END);
                 const fwd = new THREE.Vector3(Math.sin(GAME_STATE.player.rotation), 0, Math.cos(GAME_STATE.player.rotation));
                 const camPos = pMesh.position.clone().sub(fwd.multiplyScalar(1.8 + t*3.2)).add(new THREE.Vector3(0, 2.0 + t*0.6, 0));
                 camera.position.lerp(camPos, 6*delta);
@@ -2556,6 +2871,99 @@ const AwakeningController = {
                     if (glitchEl) glitchEl.classList.remove('burst');
                     if (staticEl) staticEl.classList.remove('burst');
                     if (flashEl) flashEl.classList.remove('flash');
+                    GAME_STATE.awakeningCutsceneFreeze = false;   // unpause enemies/projectiles/timers
+                    this._startActive();
+                }
+                return;
+            }
+
+            // ── Ren MONARCH'S AWAKENING (cinematic): freeze → zoom-in/fade-to-black
+            //    → RGB glitch → level-up video (LEVEL UP x3, N→N glitching numbers)
+            //    → final glitch → full black → shadow particles/ARISE moment →
+            //    awakening reveal video + aura → zoom-out/resume. Purely visual —
+            //    _startActive() at REN_CUTSCENE_END is what starts the duration
+            //    timer, same as every other character. ──
+            if (this._cfg.cutsceneType === 'ren') {
+                const videoEl    = document.getElementById('ren-cutscene-video');
+                const glitchEl   = document.getElementById('ren-glitch-layer');
+                const levelTxtEl = document.getElementById('ren-levelup-text');
+                const transEl    = document.getElementById('ren-level-transition');
+                const ariseTxtEl = document.getElementById('ren-arise-text');
+                const linesEl    = levelTxtEl ? levelTxtEl.querySelectorAll('.ren-levelup-line') : [];
+
+                if (el < REN_LEVELUP_START) {
+                    // Zoom-in + fade-to-black (camera) — RGB glitch burst as the beat lands
+                    if (glitchEl) glitchEl.classList.add('burst');
+                } else if (el < REN_LEVELUP_END) {
+                    // Level-up video beat — play once, show LEVEL UP x3 then the N→N glitch text
+                    if (glitchEl) glitchEl.classList.remove('burst');
+                    if (!s.renVideoStarted) {
+                        s.renVideoStarted = true;
+                        if (videoEl) {
+                            videoEl.src = REN_AWAKENING_ASSETS.levelUpVideo;
+                            videoEl.currentTime = 0;
+                            videoEl.play().catch(() => {});
+                            videoEl.classList.add('show');
+                        }
+                    }
+                    const localEl = el - REN_LEVELUP_START;
+                    if (!s.renLevelUpShown && localEl > 150) {
+                        s.renLevelUpShown = true;
+                        if (levelTxtEl) levelTxtEl.classList.add('show');
+                        linesEl.forEach((line, i) => setTimeout(() => line.classList.add('pop'), i * 260));
+                    }
+                    if (localEl > 1500 && transEl && !transEl.classList.contains('show')) {
+                        transEl.innerText = `${REN_AWAKENING_ASSETS.fromLevel} → ${REN_AWAKENING_ASSETS.toLevel}`;
+                        transEl.classList.add('show');
+                    }
+                } else if (el < REN_GLITCH2_END) {
+                    // Final glitch after the level-up beat
+                    if (videoEl) videoEl.classList.remove('show');
+                    if (levelTxtEl) levelTxtEl.classList.remove('show');
+                    if (transEl) transEl.classList.remove('show');
+                    if (glitchEl) glitchEl.classList.add('burst');
+                } else if (el < REN_BLACK_END) {
+                    // Full black hold
+                    if (glitchEl) glitchEl.classList.remove('burst');
+                } else if (el < REN_ARISE_END) {
+                    // ARISE moment — shadow particles build, dark energy forming
+                    if (!s.renAriseParticlesSpawned) {
+                        s.renAriseParticlesSpawned = true;
+                        this._spawnRenAriseParticles();
+                        if (ariseTxtEl) ariseTxtEl.classList.add('show');
+                    }
+                } else if (el < REN_VIDEO_END) {
+                    // Awakening reveal video — plays once, aura begins fading in via CSS
+                    if (ariseTxtEl) ariseTxtEl.classList.remove('show');
+                    if (!s.renAwakenVideoStarted) {
+                        s.renAwakenVideoStarted = true;
+                        this._clearRenAriseParticles();
+                        if (videoEl) {
+                            videoEl.src = REN_AWAKENING_ASSETS.awakeningVideo;
+                            videoEl.currentTime = 0;
+                            videoEl.play().catch(() => {});
+                            videoEl.classList.add('show');
+                        }
+                    }
+                } else if (el < REN_CUTSCENE_END) {
+                    // Zoom back out — camera handled in overrideCamera(); fade the
+                    // cutscene overlay away here so gameplay becomes visible again.
+                    if (videoEl) videoEl.classList.remove('show');
+                    const overlay = document.getElementById('ren-awakening-cutscene');
+                    if (overlay) overlay.classList.remove('fade-in');
+                }
+
+                if (el >= REN_CUTSCENE_END) {
+                    // Cleanup + resume gameplay. Awakening duration timer starts
+                    // now, inside _startActive() — the cutscene never consumes it.
+                    const overlay = document.getElementById('ren-awakening-cutscene');
+                    if (overlay) overlay.classList.remove('active', 'fade-in');
+                    if (videoEl) { videoEl.classList.remove('show'); videoEl.pause(); videoEl.src = ''; }
+                    if (glitchEl) glitchEl.classList.remove('burst');
+                    if (levelTxtEl) levelTxtEl.classList.remove('show');
+                    if (transEl) transEl.classList.remove('show');
+                    if (ariseTxtEl) ariseTxtEl.classList.remove('show');
+                    this._clearRenAriseParticles();
                     GAME_STATE.awakeningCutsceneFreeze = false;   // unpause enemies/projectiles/timers
                     this._startActive();
                 }
@@ -2856,6 +3264,20 @@ const ABILITY_ANIMS = {
         {t:550, rSx: 0.28,rSz:-0.14, rEx:0.25, lSz: 0.14, uZ: 0.06},
         {t:820, rSx: 0,   rSz:-0.14, rEx:0.35, lSz: 0.14, uZ: 0}
     ]},
+    // Ren SHADOW FLURRY — alternating left/right dagger swings (both arms
+    // driven, unlike every other character's single right-arm S1). Duration
+    // is independent of the exact hit count in _ren_s1's damage loop — this
+    // just needs to read as a fast alternating dual-blade flurry.
+    REN_S1: { dur:640, frames:[
+        {t:0,   rSx: 0,    rSz:-0.12, rEx:0.35, lSx: 0,    lSz: 0.12, lEx:0.35, uZ: 0},
+        {t:70,  rSx:-0.95, rSz:-0.30, rEx:0.10, lSx: 0,    lSz: 0.12, lEx:0.35, uZ:-0.10},
+        {t:170, rSx: 0.15, rSz:-0.14, rEx:0.35, lSx:-0.95, lSz: 0.30, lEx:0.10, uZ: 0.10},
+        {t:270, rSx:-0.95, rSz:-0.30, rEx:0.10, lSx: 0.15,  lSz: 0.14, lEx:0.35, uZ:-0.10},
+        {t:370, rSx: 0.15, rSz:-0.14, rEx:0.35, lSx:-0.95, lSz: 0.30, lEx:0.10, uZ: 0.10},
+        {t:470, rSx:-0.95, rSz:-0.30, rEx:0.10, lSx: 0.15,  lSz: 0.14, lEx:0.35, uZ:-0.10},
+        {t:560, rSx: 0,    rSz:-0.14, rEx:0.35, lSx: 0,    lSz: 0.14, lEx:0.35, uZ: 0},
+        {t:640, rSx: 0,    rSz:-0.14, rEx:0.35, lSx: 0,    lSz: 0.14, lEx:0.35, uZ: 0}
+    ]},
     // Nanami OVERTIME awakening — deliberate tie-loosen → arms spread → energy burst
     NANAMI_AWAKENING: { dur:3000, frames:[
         {t:0,    rSx:0,    rSz:-0.12, rEx:0.35, lSz: 0.14, uZ: 0},
@@ -2889,7 +3311,9 @@ const AbilityAnimController = {
         if(bf.rSx!==undefined) rig.rS.rotation.x=lp(bf.rSx,af.rSx);
         if(bf.rSz!==undefined) rig.rS.rotation.z=lp(bf.rSz,af.rSz);
         if(bf.rEx!==undefined) rig.rE.rotation.x=lp(bf.rEx,af.rEx);
+        if(bf.lSx!==undefined) rig.lS.rotation.x=lp(bf.lSx,af.lSx);
         if(bf.lSz!==undefined) rig.lS.rotation.z=lp(bf.lSz,af.lSz);
+        if(bf.lEx!==undefined) rig.lE.rotation.x=lp(bf.lEx,af.lEx);
         if(bf.uZ !==undefined) rig.upper.rotation.z=lp(bf.uZ,af.uZ);
         rig.upper.position.z=0;  // abilities don't lunge, clear any M1 lunge
         return true;
@@ -2938,6 +3362,17 @@ const AbilitySystem = {
         S3:{ name:'Relentless Assault',           cd:14000, lastUsed:0 },
         S4:{ name:'Bullet Tempest',                cd:16000, lastUsed:0 }
     },
+    // REN — names pulled straight from CharacterData.REN.abilityNames so renaming
+    // a move in one place (the editable character-data block) updates the HUD
+    // and this ability system together. S4 (Arise) is gated primarily by
+    // RenAriseSystem's 3-charge resource, not this cooldown — the short cd here
+    // just guards against double-fire on a single keypress.
+    _DEFS_REN: {
+        S1:{ name: CharacterData.REN.abilityNames.S1, cd:7000,  lastUsed:0 },
+        S2:{ name: CharacterData.REN.abilityNames.S2, cd:9000,  lastUsed:0 },
+        S3:{ name: CharacterData.REN.abilityNames.S3, cd:12000, lastUsed:0 },
+        S4:{ name: CharacterData.REN.abilityNames.S4, cd:2000,  lastUsed:0 }
+    },
     defs: {   // default to Toji so pre-game UI is safe
         S1:{ name:'Split Soul Flurry',       cd:8000,  lastUsed:0 },
         S2:{ name:'Heavenly Nullification',  cd:12000, lastUsed:0 },
@@ -2945,7 +3380,7 @@ const AbilitySystem = {
         S4:{ name:'Mirage Step',             cd:10000, lastUsed:0 }
     },
     setCharacter(charId) {
-        const src = charId==='NANAMI' ? this._DEFS_NANAMI : charId==='NAOYA' ? this._DEFS_NAOYA : charId==='URAUME' ? this._DEFS_URAUME : charId==='KAEL' ? this._DEFS_KAEL : this._DEFS_TOJI;
+        const src = charId==='NANAMI' ? this._DEFS_NANAMI : charId==='NAOYA' ? this._DEFS_NAOYA : charId==='URAUME' ? this._DEFS_URAUME : charId==='KAEL' ? this._DEFS_KAEL : charId==='REN' ? this._DEFS_REN : this._DEFS_TOJI;
         this.defs = {};
         for(const k in src) this.defs[k] = Object.assign({}, src[k], { lastUsed:0 });
         ['S1','S2','S3','S4'].forEach(k => {
@@ -2966,6 +3401,7 @@ const AbilitySystem = {
         else if(currentCharacterId==='NAOYA') this['_naoya_'+key.toLowerCase()]();
         else if(currentCharacterId==='URAUME') this['_uraume_'+key.toLowerCase()]();
         else if(currentCharacterId==='KAEL') this['_kael_'+key.toLowerCase()]();
+        else if(currentCharacterId==='REN') this['_ren_'+key.toLowerCase()]();
         else this['_'+key.toLowerCase()]();
     },
  
@@ -3513,6 +3949,94 @@ const AbilitySystem = {
         setTimeout(()=>KaelWeaponVFX.hidePistol(), shots*stepMs+250);
     },
 
+    // ════════════════════════════════════════════════════
+    // REN ABILITIES — dual-dagger assassin / shadow commander. Reuses
+    // ABILITY_ANIMS.S1-S4 (generic anim frames, same convention as every
+    // other roster character) and the shared applyDamageToEnemy/_mkAbWep hit
+    // pipeline. Shadow-themed VFX live in RenShadowFX; the mark/damage-bonus
+    // resource lives in RenShadowMarkSystem; Arise's 3-charge resource and
+    // shadow-selection flow live in RenAriseSystem — this block only calls
+    // their public methods. All damage/cooldown/duration numbers below are
+    // the editable defaults called out in the design brief.
+    // ════════════════════════════════════════════════════
+    // S1 — SHADOW FLURRY: fast multi-hit dual-dagger attack, can hit every
+    // enemy in range, dark VFX + movement afterimages on every beat.
+    _ren_s1() {
+        if(!pMesh) return;
+        AbilityAnimController.play(ABILITY_ANIMS.REN_S1);
+        const awakened = AwakeningController.isActive();
+        const perHitDmg = awakened ? 14 : 10;   // [EDITABLE] damage per hit
+        const hits      = awakened ? 6  : 4;    // [EDITABLE] number of hits
+        const radius    = 4.5;                  // [EDITABLE] strike radius around Ren
+        const stepMs    = 90;                   // [EDITABLE] time between hits
+        for (let i = 0; i < hits; i++) {
+            setTimeout(() => {
+                if (!pMesh) return;
+                RenShadowFX.spawnAfterimage();
+                RenShadowFX.pulseDagger(i % 2 === 0 ? 'right' : 'left');   // alternates left/right dagger per beat
+                GAME_STATE.enemies.forEach(entry => {
+                    if (!entry || !entry.state || entry.state.hp <= 0) return;
+                    if (entry.mesh.position.distanceTo(pMesh.position) > radius) return;
+                    const dir = new THREE.Vector3().subVectors(entry.mesh.position, pMesh.position).normalize();
+                    applyDamageToEnemy(_mkAbWep(perHitDmg, 4, 60, 0.14), dir, 1, entry);
+                    if (entry.state.hp > 0) RenShadowFX.spawnSlash(entry.mesh.position.clone());
+                });
+            }, i * stepMs);
+        }
+    },
+
+    // S2 — SHADOW STEP: vanish into shadow, dash to the target enemy, brief
+    // damage immunity mid-transit, reappear with a dagger strike.
+    _ren_s2() {
+        if (!pMesh || !eMesh || !GAME_STATE.enemy) return;
+        AbilityAnimController.play(ABILITY_ANIMS.S2);
+        const immunityMs = 350;   // [EDITABLE] damage-immunity window during the shadow dash
+        const dashDelayMs = 220;  // [EDITABLE] time spent "in shadow" before reappearing
+        const strikeDmg = 22;     // [EDITABLE] reappear-strike damage
+        pMesh.visible = false;
+        GAME_STATE.player.renImmuneUntil = performance.now() + immunityMs;   // consumed in applyDamageToPlayer
+        RenShadowFX.spawnAfterimage();
+        setTimeout(() => {
+            if (!pMesh) return;
+            if (!eMesh || !GAME_STATE.enemy || GAME_STATE.enemy.hp <= 0) { pMesh.visible = true; return; }
+            const toE = new THREE.Vector3().subVectors(eMesh.position, pMesh.position).normalize();
+            const dest = eMesh.position.clone().sub(toE.clone().multiplyScalar(1.6)); dest.y = 0;
+            dest.x = Math.max(-38, Math.min(38, dest.x)); dest.z = Math.max(-38, Math.min(38, dest.z));
+            pMesh.position.copy(dest); GAME_STATE.player.position.copy(dest);
+            const fwd = new THREE.Vector3().subVectors(eMesh.position, pMesh.position);
+            GAME_STATE.player.rotation = Math.atan2(fwd.x, fwd.z); pMesh.rotation.y = GAME_STATE.player.rotation;
+            pMesh.visible = true;
+            RenShadowFX.spawnAfterimage();
+            if (GAME_STATE.enemy.hp > 0) {
+                const d = new THREE.Vector3().subVectors(eMesh.position, pMesh.position).normalize();
+                applyDamageToEnemy(_mkAbWep(strikeDmg, 14, 110, 0.24), d, 2);
+            }
+        }, dashDelayMs);
+    },
+
+    // S3 — SHADOW MARK: mark the target enemy; marked enemies take bonus
+    // damage from every subsequent hit until the mark expires.
+    _ren_s3() {
+        if (!eMesh || !GAME_STATE.enemy || GAME_STATE.enemy.hp <= 0) return;
+        const targetEntry = _entryForState(GAME_STATE.enemy);
+        if (!targetEntry || !pMesh) return;
+        if (pMesh.position.distanceTo(targetEntry.mesh.position) > 9) return;
+        AbilityAnimController.play(ABILITY_ANIMS.S3);
+        RenShadowMarkSystem.applyMark(targetEntry);
+        const dir = new THREE.Vector3().subVectors(targetEntry.mesh.position, pMesh.position).normalize();
+        applyDamageToEnemy(_mkAbWep(8, 4, 70, 0.14), dir, 1, targetEntry);
+    },
+
+    // S4 — ARISE: shadow army ultimate. Gated by RenAriseSystem's 3-charge
+    // resource rather than the short cooldown above; opens the shadow
+    // selection menu over recently defeated enemies.
+    _ren_s4() {
+        if (!pMesh) return;
+        if (!RenAriseSystem.hasCharge()) { RenAriseSystem.flashNoCharges(); return; }
+        AbilityAnimController.play(ABILITY_ANIMS.S4);
+        RenAriseSystem.openSelection();
+    },
+
     updateUI(now) {
         const cdm=this._cdMul();
         ['S1','S2','S3','S4'].forEach(key=>{
@@ -3861,6 +4385,12 @@ function buildEntities() {
     mk(new THREE.BoxGeometry(0.28,0.52,0.28),sw,0,-0.26,0,lS);
     const lE=mkPivot(0,-0.52,0,lS); rig.lE=lE;
     mk(new THREE.BoxGeometry(0.22,0.44,0.22),sk,0,-0.22,0,lE);
+    // Left-hand attachment point — mirrors the right hand bone below. Idle/empty
+    // for every existing character (they're all single-weapon or unarmed), only
+    // ever populated by WeaponAttachmentSystem for dual-wield weapon entries
+    // (see WEAPONS.DAGGER_L/DAGGER_R and REN's dual-dagger case).
+    const leftHandNode=mkPivot(0,-0.44,0,lE);
+    GAME_STATE.player.leftHandBone=leftHandNode;
  
     const rS=mkPivot(0.52,1.84,0,upper); rig.rS=rS;
     mk(new THREE.BoxGeometry(0.28,0.52,0.28),sw,0,-0.26,0,rS);
@@ -4008,6 +4538,8 @@ const WeaponManager = {
         this.weapons.SPEAR    = this._buildSpear();
         this.weapons.CLEAVER  = this._buildCleaver();
         this.weapons.KAEL_PISTOL = this._buildKaelPistol();   // never attached via WeaponAttachmentSystem — shown only during Kael S2/S4 by KaelWeaponVFX
+        this.weapons.DAGGER_L  = this._buildDaggerLeft();
+        this.weapons.DAGGER_R  = this._buildDaggerRight();
         WeaponAttachmentSystem.attach(GAME_STATE.player.currentWeapon);
     },
  
@@ -4287,6 +4819,75 @@ const WeaponManager = {
         root.rotation.set(0, 0, 0);
         root.position.set(0.03, -0.02, 0.06);
         return root;
+    },
+
+    // ══════════════════════════════════════════════════════
+    // REN — DUAL DAGGERS. Two separate weapon objects/groups (never a single
+    // merged mesh) so either side can be swapped independently later — per
+    // the design brief, just point WeaponManager.weapons.DAGGER_L / DAGGER_R
+    // at a different builder to reskin.
+    // ══════════════════════════════════════════════════════
+    _buildDaggerLeft() {
+        const root = new THREE.Group();
+        const M = this._mesh.bind(this);
+
+        // Wide serrated blade, dark steel fading to a crimson edge
+        const mSteel  = new THREE.MeshStandardMaterial({ color:0x17181c, metalness:0.75, roughness:0.28 });
+        const mEdge   = new THREE.MeshStandardMaterial({ color:0xb8202a, metalness:0.4,  roughness:0.35, emissive:0x4a0a0e, emissiveIntensity:0.5 });
+        const mGrip   = new THREE.MeshStandardMaterial({ color:0x120a0a, roughness:0.9 });
+        const mGuard  = new THREE.MeshStandardMaterial({ color:0xd8b46a, metalness:0.6, roughness:0.4 });
+
+        // Grip
+        M(new THREE.BoxGeometry(0.052, 0.20, 0.052), mGrip, 0, -0.08, 0, root);
+        for (let i = 0; i < 4; i++) M(new THREE.BoxGeometry(0.058, 0.014, 0.058), mGrip, 0, -0.15 + i*0.055, 0, root);
+        // Guard (small bronze crossbar)
+        M(new THREE.BoxGeometry(0.16, 0.03, 0.05), mGuard, 0, 0.02, 0, root);
+        // Blade — wide near the guard, serrated top edge (blocky teeth), curving to a point
+        M(new THREE.BoxGeometry(0.10, 0.42, 0.028), mSteel, 0, 0.24, 0, root);
+        for (let i = 0; i < 5; i++) M(new THREE.BoxGeometry(0.022, 0.04, 0.030), mSteel, -0.06, 0.09 + i*0.075, 0, root);
+        // Crimson bevel along the cutting edge
+        M(new THREE.BoxGeometry(0.02, 0.40, 0.030), mEdge, 0.05, 0.24, 0, root);
+        // Tip
+        const tip = M(new THREE.BoxGeometry(0.09, 0.10, 0.026), mSteel, 0, 0.47, 0, root);
+        tip.rotation.z = 0.5;
+
+        root.userData.isDagger = true;
+        root.rotation.set(-Math.PI * 0.5, 0, 0.10);
+        root.position.set(-0.03, -0.05, 0.10);
+        return root;
+    },
+
+    _buildDaggerRight() {
+        const root = new THREE.Group();
+        const M = this._mesh.bind(this);
+
+        // Narrower curved blade, dark with violet/crimson ornamentation
+        const mSteel  = new THREE.MeshStandardMaterial({ color:0x101014, metalness:0.7, roughness:0.30 });
+        const mAccent = new THREE.MeshStandardMaterial({ color:0x7a2fbf, metalness:0.3, roughness:0.4, emissive:0x5a1f9f, emissiveIntensity:0.6 });
+        const mEdge   = new THREE.MeshStandardMaterial({ color:0xe8e8ec, metalness:0.9, roughness:0.08 });
+        const mGrip   = new THREE.MeshStandardMaterial({ color:0x0c0c10, roughness:0.9 });
+
+        // Grip
+        M(new THREE.BoxGeometry(0.050, 0.20, 0.050), mGrip, 0, -0.08, 0, root);
+        for (let i = 0; i < 4; i++) M(new THREE.BoxGeometry(0.056, 0.014, 0.056), mGrip, 0, -0.15 + i*0.055, 0, root);
+        // Ornate guard — twin hooked prongs (visual echo of the reference weapon's clawed guard)
+        M(new THREE.BoxGeometry(0.05, 0.05, 0.05), mAccent, 0, 0.02, 0, root);
+        const hookL = M(new THREE.BoxGeometry(0.02, 0.09, 0.02), mAccent, -0.07, 0.05, 0, root); hookL.rotation.z =  0.6;
+        const hookR = M(new THREE.BoxGeometry(0.02, 0.09, 0.02), mAccent,  0.07, 0.05, 0, root); hookR.rotation.z = -0.6;
+        // Blade — slim, slightly curved, chrome edge with a dark spine
+        M(new THREE.BoxGeometry(0.06, 0.44, 0.024), mSteel, -0.01, 0.26, 0, root);
+        M(new THREE.BoxGeometry(0.018, 0.44, 0.026), mEdge, 0.03, 0.26, 0, root);
+        // Secondary curved fang below the main blade (matches the reference's split-blade silhouette)
+        const fang = M(new THREE.BoxGeometry(0.05, 0.18, 0.022), mSteel, -0.05, 0.06, 0, root);
+        fang.rotation.z = -0.35;
+        // Tip
+        const tip = M(new THREE.BoxGeometry(0.05, 0.09, 0.022), mSteel, 0.01, 0.49, 0, root);
+        tip.rotation.z = -0.45;
+
+        root.userData.isDagger = true;
+        root.rotation.set(-Math.PI * 0.5, 0, -0.10);
+        root.position.set(0.03, -0.05, 0.10);
+        return root;
     }
 };
  
@@ -4296,8 +4897,23 @@ const WeaponManager = {
 const WeaponAttachmentSystem = {
     attach(weaponData) {
         const hand = GAME_STATE.player.handBone;
+        const leftHand = GAME_STATE.player.leftHandBone;
         if (!hand) return;
         while (hand.children.length > 0) hand.remove(hand.children[0]);
+        if (leftHand) while (leftHand.children.length > 0) leftHand.remove(leftHand.children[0]);
+
+        // REN — dual daggers occupy BOTH hands at once. Handled as its own
+        // branch (rather than the single-key lookup below) since every other
+        // character in the roster is single-weapon or unarmed.
+        if (weaponData === WEAPONS.DAGGER_L || weaponData === WEAPONS.DAGGER_R) {
+            const right = WeaponManager.weapons.DAGGER_R;
+            const left  = WeaponManager.weapons.DAGGER_L;
+            if (right) hand.add(right);
+            if (leftHand && left) leftHand.add(left);
+            WeaponVisualController.activeWeaponKey = 'DAGGER_DUAL';
+            return;
+        }
+
         let key = 'KATANA';
         if (weaponData === WEAPONS.SPEAR)   key = 'SPEAR';
         if (weaponData === WEAPONS.CLEAVER) key = 'CLEAVER';
@@ -4570,6 +5186,9 @@ onEnemyDeath(entry) {
         console.warn('[WaveManager] onEnemyDeath called with invalid entry, ignoring:', entry);
         return;
     }
+    // Ren — record this kill as raisable material for Arise. No-op for every
+    // other character (recordDefeat checks currentCharacterId internally).
+    if (typeof RenAriseSystem !== 'undefined') RenAriseSystem.recordDefeat(entry);
     if (entry.mesh) entry.mesh.visible = false;
     if (entry.barEl) entry.barEl.style.display = 'none';
 
@@ -5212,6 +5831,10 @@ WaveManager.onPlayerDeath = function() {
         PerkSystem.flashMessage('LAST STAND!', '#ef4444');
         return; // the run continues — do not end it
     }
+    // Ren — "If player dies: Shadow army is removed. Arise charges reset."
+    // Skipped on a Last Stand revive above since the run continues.
+    if (typeof ShadowArmySystem !== 'undefined') ShadowArmySystem.clearAll();
+    if (typeof RenAriseSystem !== 'undefined') RenAriseSystem.resetForNewRun();
     _origOnPlayerDeath();
     DeathScreen.show();
 };
@@ -5836,6 +6459,11 @@ function applyDamageToEnemy(wep,dir,step,targetEntry) {
     // Crit perks: flat chance for a bonus-multiplier hit
     const isCrit = P.critChance > 0 && Math.random() < P.critChance;
     if (isCrit) dmgMul *= P.critMul;
+
+    // Ren Shadow Mark: marked enemies take bonus damage until the mark expires
+    if (state.renShadowMarked && now < (state.renShadowMarkEndTime||0)) {
+        dmgMul *= RenShadowMarkSystem.DAMAGE_BONUS;
+    }
  
     let dmg=Math.round(wep.damage*tuning.dmgMul*dmgMul);
  
@@ -7721,6 +8349,564 @@ const KaelBulletSystem = {
     }
 };
 
+// ════════════════════════════════════════════════════════
+// REN — SHADOW FX (afterimages + slash bursts). Dark/violet-themed VFX
+// shared by every Ren ability. Same afterimage technique as
+// KaelOverclockSystem._spawnAfterimage above, recoloured for the shadow
+// theme and exposed as its own module since Ren abilities use it far more
+// heavily (every S1 beat, both ends of S2, on mark application).
+// ════════════════════════════════════════════════════════
+const RenShadowFX = {
+    AFTERIMAGE_COLOR: 0x3a1f5c,   // [EDITABLE] deep shadow-violet
+    SLASH_COLOR:      0x8a4fd6,   // [EDITABLE] bright violet slash accent
+
+    spawnAfterimage() {
+        if (!scene || !pMesh) return;
+        const clone = pMesh.clone(true);
+        clone.visible = true;
+        const mats = [];
+        clone.traverse(obj => {
+            if (obj.isMesh) {
+                const m = new THREE.MeshBasicMaterial({ color:this.AFTERIMAGE_COLOR, transparent:true, opacity:0.45, depthWrite:false });
+                obj.material = m; obj.castShadow = false;
+                mats.push(m);
+            }
+        });
+        scene.add(clone);
+        const t0 = performance.now(), dur = 260;
+        (function tick() {
+            const t = Math.min(1, (performance.now() - t0) / dur);
+            mats.forEach(m => { m.opacity = 0.45 * (1 - t); });
+            if (t < 1) requestAnimationFrame(tick);
+            else { scene.remove(clone); mats.forEach(m => m.dispose()); }
+        })();
+    },
+
+    // Small dark slash burst at a hit location — dagger-flurry impact VFX
+    spawnSlash(pos) {
+        if (!scene) return;
+        const geo = new THREE.PlaneGeometry(0.9, 0.14);
+        const mat = new THREE.MeshBasicMaterial({ color:this.SLASH_COLOR, transparent:true, opacity:0.9, side:THREE.DoubleSide });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.copy(pos).add(new THREE.Vector3(0, 1.2, 0));
+        mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+        scene.add(mesh);
+        const t0 = performance.now(), dur = 180;
+        (function tick() {
+            const t = Math.min(1, (performance.now() - t0) / dur);
+            mesh.scale.setScalar(1 + t*1.6);
+            mat.opacity = 0.9 * (1 - t);
+            if (t < 1) requestAnimationFrame(tick);
+            else { scene.remove(mesh); geo.dispose(); mat.dispose(); }
+        })();
+    },
+
+    // Brief scale-punch on one dagger mesh — sells "alternates left and right
+    // dagger attacks" on top of the alternating REN_S1 arm animation.
+    pulseDagger(side) {
+        const hand = side === 'left' ? GAME_STATE.player.leftHandBone : GAME_STATE.player.handBone;
+        if (!hand) return;
+        const dagger = hand.children.find(c => c.userData && c.userData.isDagger);
+        if (!dagger) return;
+        const base = dagger.userData._baseScale || (dagger.userData._baseScale = dagger.scale.clone());
+        const t0 = performance.now(), dur = 140;
+        (function tick() {
+            const t = Math.min(1, (performance.now() - t0) / dur);
+            const s = 1 + Math.sin(t * Math.PI) * 0.35;
+            dagger.scale.set(base.x * s, base.y * s, base.z * s);
+            if (t < 1) requestAnimationFrame(tick);
+            else dagger.scale.copy(base);
+        })();
+    }
+};
+
+// ════════════════════════════════════════════════════════
+// REN — SHADOW AURA. Persistent dark-violet ground ring + floating shadow
+// motes parented to the player mesh, shown only while Ren's awakening is
+// active (started/stopped from AwakeningController's 'ren' branches). Self-
+// driven by its own requestAnimationFrame loop rather than the main game
+// loop, so it's fully additive — nothing else needs to call update() on it.
+// ════════════════════════════════════════════════════════
+const RenShadowAura = {
+    _group: null, _motes: null, _ring: null, _ringMat: null, _active: false,
+
+    start() {
+        if (!scene || !pMesh || this._active) return;
+        this._active = true;
+        const group = new THREE.Group();
+
+        const ringGeo = new THREE.RingGeometry(0.9, 1.15, 24);
+        const ringMat = new THREE.MeshBasicMaterial({ color:0x3a1f5c, transparent:true, opacity:0.55, side:THREE.DoubleSide });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.05;
+        group.add(ring);
+
+        const motes = [];
+        const MOTE_COUNT = 14;   // [EDITABLE]
+        for (let i = 0; i < MOTE_COUNT; i++) {
+            const geo = new THREE.SphereGeometry(0.05 + Math.random()*0.04, 5, 5);
+            const mat = new THREE.MeshBasicMaterial({ color:0x8a4fd6, transparent:true, opacity:0.75 });
+            const mote = new THREE.Mesh(geo, mat);
+            const ang = Math.random()*Math.PI*2, r = 0.6 + Math.random()*0.5;
+            mote.position.set(Math.cos(ang)*r, 0.3 + Math.random()*1.6, Math.sin(ang)*r);
+            mote.userData = { ang, r, speed: 0.6 + Math.random()*0.8, bob: Math.random()*Math.PI*2 };
+            group.add(mote);
+            motes.push(mote);
+        }
+
+        pMesh.add(group);
+        this._group = group; this._motes = motes; this._ring = ring; this._ringMat = ringMat;
+
+        const tick = () => {
+            if (!this._active || !this._group) return;
+            const t = performance.now() * 0.001;
+            this._ring.rotation.z += 0.01;
+            this._ringMat.opacity = 0.45 + Math.sin(t*2)*0.12;
+            this._motes.forEach(m => {
+                m.userData.ang += 0.02 * m.userData.speed;
+                m.position.x = Math.cos(m.userData.ang) * m.userData.r;
+                m.position.z = Math.sin(m.userData.ang) * m.userData.r;
+                m.position.y = 0.9 + Math.sin(t*1.4 + m.userData.bob) * 0.5;
+            });
+            requestAnimationFrame(tick);
+        };
+        tick();
+    },
+
+    stop() {
+        this._active = false;
+        if (this._group && pMesh) {
+            pMesh.remove(this._group);
+            this._group.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+        }
+        this._group = null; this._motes = null; this._ring = null; this._ringMat = null;
+    }
+};
+
+// ════════════════════════════════════════════════════════
+// REN — SHADOW MARK. Applied by Shadow Mark (S3); read additively inside
+// applyDamageToEnemy (see the "Ren Shadow Mark" block there). Duration and
+// damage bonus are the editable tunables called out in the design brief —
+// nothing else in the codebase hardcodes these numbers.
+// ════════════════════════════════════════════════════════
+const RenShadowMarkSystem = {
+    DURATION_MS:  8000,   // [EDITABLE] mark duration
+    DAMAGE_BONUS: 1.35,   // [EDITABLE] damage multiplier applied to marked enemies
+
+    applyMark(entry) {
+        if (!entry || !entry.state) return;
+        entry.state.renShadowMarked = true;
+        entry.state.renShadowMarkEndTime = performance.now() + this.DURATION_MS;
+        RenShadowFX.spawnSlash(entry.mesh.position.clone());
+        this._spawnMarkGlyph(entry);
+    },
+
+    // Small persistent violet ring above the marked enemy's head, removed
+    // automatically when the mark expires or the enemy dies.
+    _spawnMarkGlyph(entry) {
+        if (!scene) return;
+        if (entry._renMarkGlyph) {
+            entry.mesh.remove(entry._renMarkGlyph);
+            entry._renMarkGlyph.geometry.dispose();
+            entry._renMarkGlyph.material.dispose();
+        }
+        const geo = new THREE.RingGeometry(0.34, 0.42, 16);
+        const mat = new THREE.MeshBasicMaterial({ color:RenShadowFX.SLASH_COLOR, transparent:true, opacity:0.85, side:THREE.DoubleSide });
+        const ring = new THREE.Mesh(geo, mat);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(0, 2.35, 0);
+        entry.mesh.add(ring);
+        entry._renMarkGlyph = ring;
+        (function tick() {
+            if (!entry.mesh || !entry.state) return;
+            const now = performance.now();
+            if (!entry.state.renShadowMarked || now >= entry.state.renShadowMarkEndTime || entry.state.hp <= 0) {
+                entry.state.renShadowMarked = false;
+                if (entry._renMarkGlyph) {
+                    entry.mesh.remove(entry._renMarkGlyph);
+                    entry._renMarkGlyph.geometry.dispose();
+                    entry._renMarkGlyph.material.dispose();
+                    entry._renMarkGlyph = null;
+                }
+                return;
+            }
+            ring.rotation.z += 0.03;
+            requestAnimationFrame(tick);
+        })();
+    }
+};
+
+// ════════════════════════════════════════════════════════
+// REN — ARISE (shadow army ultimate). Phase 2 scope: the 3-charge resource,
+// reset rules, and the shadow-selection flow. Collects a rolling pool of
+// recently defeated enemies (REN runs only, via WaveManager.onEnemyDeath →
+// recordDefeat) and lets the player choose which ones to raise. The actual
+// persistent shadow-army units/AI (max 50, weighted classes, follow/attack
+// behavior) are Phase 3 — they will consume RenAriseSystem.pendingArmy.
+// Nothing in this module spawns a fighting unit yet.
+// ════════════════════════════════════════════════════════
+const RenAriseSystem = {
+    charges: { max:3, current:3 },   // [EDITABLE] max charges — mirrors CharacterData.REN.ariseCharges
+    recentDefeats: [],               // rolling pool of {id,name,position,defeatedAt} snapshots
+    MAX_POOL: 12,                    // [EDITABLE] how many recent kills stay selectable at once
+    pendingArmy: [],                 // enemies chosen to raise — read by Phase 3's ShadowArmySystem
+    _menuEl: null,
+
+    // Called on every fresh run start (see the WaveManager.startRun hook below)
+    // and again on player death — "Arise charges reset" per the design brief.
+    resetForNewRun() {
+        const cfg = (CharacterData.REN && CharacterData.REN.ariseCharges) || { max:3 };
+        this.charges.max = cfg.max;
+        this.charges.current = cfg.max;
+        this.recentDefeats = [];
+        this.pendingArmy = [];
+        this._closeMenu();
+        this._refreshHUD();
+    },
+
+    hasCharge() { return this.charges.current > 0; },
+
+    // Additive hook called from WaveManager.onEnemyDeath — only records
+    // anything while REN is the active character, so every other
+    // character's death handling is completely unaffected.
+    recordDefeat(entry) {
+        if (currentCharacterId !== 'REN' || !entry || !entry.mesh) return;
+        const waveLabel = (typeof WaveManager !== 'undefined' && WaveManager.waveNumber) ? ` (Wave ${WaveManager.waveNumber})` : '';
+        this.recentDefeats.push({
+            id: 'shadow_' + Math.random().toString(36).slice(2, 9),
+            name: ((entry.mesh.userData && entry.mesh.userData.enemyName) || 'Fallen Enemy') + waveLabel,
+            position: entry.mesh.position.clone(),
+            defeatedAt: performance.now()
+        });
+        if (this.recentDefeats.length > this.MAX_POOL) this.recentDefeats.shift();
+    },
+
+    flashNoCharges() {
+        this._flashMessage('NO ARISE CHARGES REMAINING', '#8a4fd6');
+    },
+
+    openSelection() {
+        if (!this.hasCharge()) { this.flashNoCharges(); return; }
+        this._buildMenu();
+    },
+
+    // ── Selection menu — lightweight DOM overlay built entirely at runtime
+    // so this module stays self-contained (no static HTML/CSS edits needed
+    // for this phase; Phase 3 can restyle this to match the HUD more tightly). ──
+    _buildMenu() {
+        this._closeMenu();
+        const overlay = document.createElement('div');
+        overlay.id = 'ren-arise-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:rgba(5,2,12,0.78);backdrop-filter:blur(3px);';
+
+        const panel = document.createElement('div');
+        panel.style.cssText = 'width:min(520px,90vw);max-height:70vh;overflow-y:auto;background:linear-gradient(180deg,#140a22,#0a0612);border:1px solid #5a3f8f;border-radius:10px;padding:22px;box-shadow:0 0 40px rgba(122,63,191,0.5);';
+
+        const title = document.createElement('div');
+        title.innerText = (CharacterData.REN.abilityNames.S4 || 'Arise') + ' — Choose Shadows to Raise';
+        title.style.cssText = 'color:#c9a8ff;font-size:18px;font-weight:800;letter-spacing:1px;margin-bottom:4px;text-align:center;';
+
+        const sub = document.createElement('div');
+        sub.innerText = `Charges remaining: ${this.charges.current}/${this.charges.max}`;
+        sub.style.cssText = 'color:#8a72b8;font-size:12px;text-align:center;margin-bottom:16px;';
+
+        panel.appendChild(title); panel.appendChild(sub);
+
+        if (this.recentDefeats.length === 0) {
+            const empty = document.createElement('div');
+            empty.innerText = 'No recently defeated enemies available to raise.';
+            empty.style.cssText = 'color:#77678f;text-align:center;padding:20px 0;font-size:13px;';
+            panel.appendChild(empty);
+        } else {
+            this.recentDefeats.slice().reverse().forEach(defeat => {
+                const row = document.createElement('button');
+                row.innerText = defeat.name;
+                row.style.cssText = 'display:block;width:100%;text-align:left;background:#1c1030;color:#e4d8ff;border:1px solid #3f2a5f;border-radius:6px;padding:10px 14px;margin-bottom:8px;font-size:14px;cursor:pointer;';
+                row.onmouseenter = () => row.style.background = '#2c1a4a';
+                row.onmouseleave = () => row.style.background = '#1c1030';
+                row.onclick = () => this._select(defeat);
+                panel.appendChild(row);
+            });
+        }
+
+        const cancel = document.createElement('button');
+        cancel.innerText = 'Cancel';
+        cancel.style.cssText = 'display:block;width:100%;text-align:center;background:transparent;color:#8a72b8;border:1px solid #3f2a5f;border-radius:6px;padding:8px;margin-top:6px;cursor:pointer;font-size:12px;';
+        cancel.onclick = () => this._closeMenu();
+        panel.appendChild(cancel);
+
+        overlay.appendChild(panel);
+        document.body.appendChild(overlay);
+        this._menuEl = overlay;
+    },
+
+    _select(defeat) {
+        if (typeof ShadowArmySystem !== 'undefined' && ShadowArmySystem.isFull()) {
+            this._flashMessage('SHADOW ARMY IS FULL (50/50)', '#e74c3c');
+            return;   // charge NOT spent — capacity is checked before consuming it
+        }
+        this.charges.current = Math.max(0, this.charges.current - 1);
+        this.pendingArmy.push(defeat);
+        this.recentDefeats = this.recentDefeats.filter(d => d.id !== defeat.id);
+        this._refreshHUD();
+        const spawned = (typeof ShadowArmySystem !== 'undefined') ? ShadowArmySystem.spawn(defeat) : null;
+        this._flashMessage(`${defeat.name} joins the shadow army${spawned ? ' (' + spawned.className + ')' : ''}`, '#8a4fd6');
+        this._closeMenu();
+    },
+
+    _flashMessage(text, color) {
+        const msg = document.getElementById('status-msg');
+        if (!msg) return;
+        msg.innerText = text;
+        msg.style.color = color;
+        msg.style.opacity = '1';
+        setTimeout(() => { msg.style.opacity = '0'; }, 1200);
+    },
+
+    _closeMenu() {
+        if (this._menuEl) { this._menuEl.remove(); this._menuEl = null; }
+    },
+
+    // Placeholder charge-count HUD — Phase 3 will replace this with a proper
+    // pip/icon readout matching the rest of the ability bar's visual style.
+    _refreshHUD() {
+        let el = document.getElementById('ren-arise-charges');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'ren-arise-charges';
+            el.style.cssText = 'position:fixed;bottom:110px;left:50%;transform:translateX(-50%);color:#c9a8ff;font-size:12px;font-weight:700;letter-spacing:1px;text-shadow:0 0 6px rgba(122,63,191,0.8);z-index:60;pointer-events:none;';
+            document.body.appendChild(el);
+        }
+        const visible = currentCharacterId === 'REN';
+        el.style.display = visible ? '' : 'none';
+        if (visible) el.innerText = `ARISE ${this.charges.current}/${this.charges.max}`;
+    }
+};
+
+// ════════════════════════════════════════════════════════
+// SHADOW ARMY SYSTEM — Ren's raised shadow units. Each entry in `army` is a
+// fully independent summon: own mesh, own hp/damage/speed, own simple AI
+// state machine (FOLLOW → SEEK → ATTACK, or RETURN when it strays too far).
+// Capped at CharacterData.REN.shadowArmy.maxShadows (default 50). Built to
+// be reusable — a future character's own summon kit could reuse this same
+// module by passing its own class-stats table into spawn().
+//
+// Performance notes (50 units target):
+//  - No per-unit skeletal rig — each shadow is a scaled/recolored clone of
+//    the existing enemy dummy geometry (buildEnemyMesh()), same cost as one
+//    more enemy on screen.
+//  - Target (re)acquisition is throttled per-unit (thinkIntervalMs) instead
+//    of scanning GAME_STATE.enemies every frame for every shadow; movement
+//    itself still updates every frame for smooth motion.
+//  - Damage is applied directly (see _dealDamageToEnemy/_dealDamageToShadow)
+//    rather than through the player's full applyDamageToEnemy pipeline, so
+//    50 simultaneous shadow attacks never spam hitstop/camera-shake/knockback
+//    or hijack the GAME_STATE.enemy / eMesh "currently targeted enemy" pointers
+//    that the player's own HUD and abilities rely on.
+// ════════════════════════════════════════════════════════
+const SHADOW_CLASS_STATS = {
+    // [EDITABLE] — hp/damage/speed/attackRange/attackCooldown(ms)/color/scale per class
+    SOLDIER:  { label:'Shadow Soldier',  hp:40,  damage:8,  speed:9,  attackRange:2.2, attackCooldown:900,  color:0x241638, scale:1.00 },
+    GUARD:    { label:'Shadow Guard',    hp:95,  damage:6,  speed:6,  attackRange:2.2, attackCooldown:1150, color:0x18101f, scale:1.18 },
+    ASSASSIN: { label:'Shadow Assassin', hp:26,  damage:15, speed:13, attackRange:2.0, attackCooldown:620,  color:0x3a1f5c, scale:0.85 },
+    ARCHER:   { label:'Shadow Archer',   hp:22,  damage:10, speed:8,  attackRange:9.0, attackCooldown:1300, color:0x4a2f6c, scale:0.90 },
+    ELITE:    { label:'Shadow Elite',    hp:150, damage:22, speed:10, attackRange:2.4, attackCooldown:780,  color:0x8a4fd6, scale:1.32 }
+};
+
+const ShadowArmySystem = {
+    army: [],
+    FOLLOW_RADIUS: 14,      // [EDITABLE] beyond this, a shadow abandons its target and returns to the player
+    SEEK_RADIUS: 11,        // [EDITABLE] how far a shadow will look for an enemy to fight
+    THINK_INTERVAL_MS: 260, // [EDITABLE] how often each shadow re-scans for a target (perf throttle, not every frame)
+    FORMATION_RADIUS: 2.6,  // [EDITABLE] loose follow-formation spread around the player
+
+    isFull() {
+        const cap = (CharacterData.REN.shadowArmy && CharacterData.REN.shadowArmy.maxShadows) || 50;
+        return this.army.length >= cap;
+    },
+
+    // Weighted random class pick, reading CharacterData.REN.shadowArmy.shadowClassChances
+    // (editable %s — doesn't need to sum to exactly 100, it's normalized here).
+    _rollClass() {
+        const chances = (CharacterData.REN.shadowArmy && CharacterData.REN.shadowArmy.shadowClassChances) || {};
+        const entries = Object.entries(chances).filter(([k]) => SHADOW_CLASS_STATS[k]);
+        const total = entries.reduce((sum, [, w]) => sum + w, 0) || 1;
+        let roll = Math.random() * total;
+        for (const [key, weight] of entries) {
+            if (roll < weight) return key;
+            roll -= weight;
+        }
+        return entries.length ? entries[entries.length - 1][0] : 'SOLDIER';
+    },
+
+    // Builds one shadow unit at (roughly) the spot its source enemy died, and
+    // adds it to the army. Returns the unit, or null if the army is full.
+    spawn(defeat) {
+        if (!scene || !pMesh) return null;
+        if (this.isFull()) return null;
+
+        const cls = this._rollClass();
+        const stats = SHADOW_CLASS_STATS[cls];
+
+        const mesh = buildEnemyMesh();   // reuse the existing enemy geometry factory — same cost as a normal enemy
+        mesh.scale.setScalar(stats.scale);
+        mesh.traverse(o => {
+            if (o.isMesh) {
+                o.material = o.material.clone();
+                o.material.color.setHex(stats.color);
+                o.material.emissive = new THREE.Color(0x2a1550);
+                o.material.emissiveIntensity = 0.35;
+                o.material.transparent = true;
+                o.material.opacity = 0.92;
+            }
+        });
+        const spawnPos = (defeat && defeat.position) ? defeat.position.clone() : pMesh.position.clone();
+        spawnPos.x += (Math.random()*2 - 1); spawnPos.z += (Math.random()*2 - 1);
+        mesh.position.copy(spawnPos);
+        scene.add(mesh);
+
+        const unit = {
+            id: 'shadowunit_' + Math.random().toString(36).slice(2, 9),
+            mesh, className: stats.label, classKey: cls,
+            hp: stats.hp, maxHp: stats.hp, damage: stats.damage, speed: stats.speed,
+            attackRange: stats.attackRange, attackCooldown: stats.attackCooldown,
+            lastAttackTime: 0, lastEnemyStrikeTime: 0,
+            state: 'FOLLOW', targetEntry: null,
+            nextThinkTime: performance.now() + Math.random()*this.THINK_INTERVAL_MS,
+            formationAngle: (this.army.length / 50) * Math.PI * 2
+        };
+        this.army.push(unit);
+        return unit;
+    },
+
+    // Removes every shadow immediately — "Shadows disappear when the player dies" /
+    // fresh run start.
+    clearAll() {
+        this.army.forEach(u => this._disposeUnit(u));
+        this.army = [];
+    },
+
+    _disposeUnit(unit) {
+        if (!scene || !unit.mesh) return;
+        scene.remove(unit.mesh);
+        unit.mesh.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+    },
+
+    // Lightweight direct damage — deliberately bypasses applyDamageToEnemy's
+    // full pipeline (hitstop/camera-shake/knockback/GAME_STATE.enemy pointer)
+    // so 50 shadows attacking at once stays cheap and doesn't fight the
+    // player's own HUD/ability targeting for control of that pointer.
+    _dealDamageToEnemy(unit, entry) {
+        if (!entry || !entry.state || entry.state.hp <= 0) return;
+        entry.state.hp = Math.max(0, entry.state.hp - unit.damage);
+        RenShadowFX.spawnSlash(entry.mesh.position.clone());
+        if (entry.state.hp <= 0) WaveManager.onEnemyDeath(entry);
+    },
+    _dealDamageToShadow(unit, dmg) {
+        unit.hp = Math.max(0, unit.hp - dmg);
+    },
+
+    // ── Per-frame AI/movement update for the whole army. Called from the
+    // main game loop; a complete no-op whenever the army is empty (every
+    // character other than Ren, or Ren before using Arise). ──
+    update(delta, now) {
+        if (this.army.length === 0) return;
+        if (!pMesh || GAME_STATE.player.hp <= 0) return;
+        const awakened = AwakeningController.isActive() && currentCharacterId === 'REN';
+        const buffs = (CharacterData.REN.awakening && CharacterData.REN.awakening.buffs) || {};
+        const dmgMul = awakened ? (buffs.shadowDamageMultiplier || 1) : 1;
+        const atkSpeedMul = awakened ? (buffs.shadowAttackSpeedMultiplier || 1) : 1;
+
+        for (let i = this.army.length - 1; i >= 0; i--) {
+            const unit = this.army[i];
+
+            // Death handling — remove immediately, no lingering
+            if (unit.hp <= 0) {
+                this._disposeUnit(unit);
+                this.army.splice(i, 1);
+                continue;
+            }
+
+            const distToPlayer = unit.mesh.position.distanceTo(pMesh.position);
+
+            // Periodic re-think (perf throttle) — decide FOLLOW vs SEEK vs RETURN
+            if (now >= unit.nextThinkTime) {
+                unit.nextThinkTime = now + this.THINK_INTERVAL_MS;
+                if (distToPlayer > this.FOLLOW_RADIUS) {
+                    unit.state = 'RETURN';
+                    unit.targetEntry = null;
+                } else {
+                    // Look for the nearest living enemy within seek radius
+                    let nearest = null, nearestDist = this.SEEK_RADIUS;
+                    for (const entry of GAME_STATE.enemies) {
+                        if (!entry || !entry.state || entry.state.hp <= 0 || !entry.mesh) continue;
+                        const d = unit.mesh.position.distanceTo(entry.mesh.position);
+                        if (d < nearestDist) { nearest = entry; nearestDist = d; }
+                    }
+                    if (nearest) { unit.state = 'SEEK'; unit.targetEntry = nearest; }
+                    else { unit.state = 'FOLLOW'; unit.targetEntry = null; }
+                }
+            }
+            // Drop a target that died between think-ticks
+            if (unit.targetEntry && (!unit.targetEntry.state || unit.targetEntry.state.hp <= 0)) {
+                unit.targetEntry = null;
+                unit.state = 'FOLLOW';
+            }
+
+            // ── Movement + action per state ──
+            if (unit.state === 'RETURN') {
+                this._moveToward(unit, pMesh.position, delta);
+            } else if (unit.state === 'SEEK' && unit.targetEntry) {
+                const tPos = unit.targetEntry.mesh.position;
+                const dist = unit.mesh.position.distanceTo(tPos);
+                if (dist > unit.attackRange) {
+                    this._moveToward(unit, tPos, delta);
+                } else {
+                    unit.mesh.lookAt(tPos.x, unit.mesh.position.y, tPos.z);
+                    if (now - unit.lastAttackTime >= unit.attackCooldown * atkSpeedMul) {
+                        unit.lastAttackTime = now;
+                        const dealt = Math.round(unit.damage * dmgMul);
+                        const savedDmg = unit.damage; unit.damage = dealt;
+                        this._dealDamageToEnemy(unit, unit.targetEntry);
+                        unit.damage = savedDmg;
+                        // Simple mutual exchange — the enemy strikes back on its own
+                        // cooldown, entirely self-contained here (doesn't touch the
+                        // shared enemy-AI/player-attack code at all).
+                        if (unit.targetEntry.state && unit.targetEntry.state.hp > 0 &&
+                            now - unit.lastEnemyStrikeTime >= (unit.targetEntry.state.attackCooldown || 1000)) {
+                            unit.lastEnemyStrikeTime = now;
+                            this._dealDamageToShadow(unit, unit.targetEntry.state.damage || 5);
+                        }
+                    }
+                }
+            } else {
+                // FOLLOW — loose formation position around the player, not stacked on top
+                const ang = unit.formationAngle + now * 0.0002;
+                const formationPos = new THREE.Vector3(
+                    pMesh.position.x + Math.cos(ang) * this.FORMATION_RADIUS,
+                    0,
+                    pMesh.position.z + Math.sin(ang) * this.FORMATION_RADIUS
+                );
+                if (unit.mesh.position.distanceTo(formationPos) > 0.4) this._moveToward(unit, formationPos, delta);
+            }
+        }
+    },
+
+    _moveToward(unit, targetPos, delta) {
+        const dir = new THREE.Vector3(targetPos.x - unit.mesh.position.x, 0, targetPos.z - unit.mesh.position.z);
+        const dist = dir.length();
+        if (dist < 0.05) return;
+        dir.normalize();
+        const step = Math.min(dist, unit.speed * delta);
+        unit.mesh.position.x += dir.x * step;
+        unit.mesh.position.z += dir.z * step;
+        unit.mesh.position.x = Math.max(-38, Math.min(38, unit.mesh.position.x));
+        unit.mesh.position.z = Math.max(-38, Math.min(38, unit.mesh.position.z));
+        unit.mesh.lookAt(unit.mesh.position.x + dir.x, unit.mesh.position.y, unit.mesh.position.z + dir.z);
+    }
+};
+
 function applyDamageToPlayer(dmgOverride, attackerEntry) {
     if(GAME_STATE.player.hp<=0||GAME_STATE.player.isDashing) return;
     // Hyperarmor: invulnerable during awakening animation
@@ -7729,6 +8915,8 @@ function applyDamageToPlayer(dmgOverride, attackerEntry) {
     if(performance.now() < SECRET_AWAKENING_STATE.domainGraceUntil) return;
     // Kael Overlock: "Enemies... Cannot damage Kael" while active
     if(GAME_STATE.kaelOverclockFreeze) return;
+    // Ren Shadow Step: brief damage immunity while dashing through shadow
+    if(performance.now() < (GAME_STATE.player.renImmuneUntil||0)) return;
     const baseDmg = (dmgOverride !== undefined) ? dmgOverride : GAME_STATE.enemy.damage;
     const incomingDmg=Math.round(baseDmg*AwakeningController.getDamageReceiveMul()*GAME_STATE.player.damageTakenMul);
     GAME_STATE.player.hp=Math.max(0,GAME_STATE.player.hp-incomingDmg);
@@ -7806,6 +8994,8 @@ function runGameLoop(timestamp) {
         AbilitySystem.updateUI(now);
         // Kael Cyber Limit Break awakening cutscene: pause relevant gameplay timers (visual-only cutscene)
         if (!GAME_STATE.awakeningCutsceneFreeze) WaveManager.update(now);
+        // Ren's shadow army — no-op instantly for every other character (empty army array)
+        if (!GAME_STATE.awakeningCutsceneFreeze && typeof ShadowArmySystem !== 'undefined') ShadowArmySystem.update(delta, now);
  
         // Input buffer flush — fires buffered attack as soon as cooldown clears
         if(combatFX.inputBuffer){
